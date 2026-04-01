@@ -60,7 +60,7 @@ export default function TwibbonHome({
             <Head title="SMKN 6 Surakarta - Twibbon & Shortlink" />
 
             <div className="min-h-screen bg-[radial-gradient(circle_at_12%_18%,#ffe7bc_0%,transparent_36%),radial-gradient(circle_at_84%_12%,#c9f4ff_0%,transparent_38%),linear-gradient(180deg,#fffdf8_0%,#edf6ff_100%)] px-4 py-6 md:px-8 md:py-10">
-                <div className="mx-auto max-w-6xl space-y-8">
+                <div className="mx-auto max-w-375 space-y-8">
                     <TwibbonNavbar canRegister={canRegister} />
 
                     <section className="rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-sm md:p-10">
@@ -124,13 +124,18 @@ export default function TwibbonHome({
                         </div>
                     </section>
 
-                    <section className="space-y-4">
+                    <section className="space-y-4 rounded-3xl border border-slate-200/70 bg-white/80 p-5 shadow-sm backdrop-blur md:p-6">
                         <div className="flex items-center gap-2">
                             <TrendingUpIcon className="size-5 text-slate-700" />
                             <h2 className="text-2xl font-semibold text-slate-900">
                                 Twibbon Sedang Trending
                             </h2>
                         </div>
+
+                        <p className="text-sm text-slate-600">
+                            Rekomendasi twibbon paling sering dipakai oleh warga
+                            sekolah saat ini.
+                        </p>
 
                         {trending_twibbons.length === 0 ? (
                             <Card>
@@ -144,29 +149,60 @@ export default function TwibbonHome({
                         ) : (
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {trending_twibbons.map((twibbon) => (
-                                    <Card key={twibbon.id} className="overflow-hidden py-0">
-                                        <div className="aspect-3/4 bg-slate-100">
+                                    <Card
+                                        key={twibbon.id}
+                                        className="overflow-hidden border-white/70 bg-white/95 py-0 shadow-sm"
+                                    >
+                                        <div className="relative h-44 bg-slate-100">
                                             <img
                                                 src={twibbon.preview_url}
                                                 alt={twibbon.name}
-                                                className="h-full w-full object-cover"
+                                                className="mx-auto h-full w-auto max-w-full object-contain"
                                                 loading="lazy"
                                             />
+
+                                            <Badge
+                                                variant="secondary"
+                                                className="absolute top-2 left-2 text-[11px]"
+                                            >
+                                                Trending
+                                            </Badge>
                                         </div>
-                                        <CardHeader className="pb-2">
-                                            <CardTitle className="truncate text-lg">
+
+                                        <CardHeader className="space-y-1 px-4 pt-3 pb-1">
+                                            <CardTitle className="truncate text-base">
                                                 {twibbon.name}
                                             </CardTitle>
-                                            <CardDescription>
+                                            <CardDescription className="text-xs">
                                                 Oleh {twibbon.creator_name}
                                             </CardDescription>
                                         </CardHeader>
-                                        <CardContent className="pt-0">
-                                            <Badge variant="outline">
-                                                {twibbon.uses_count} penggunaan
-                                            </Badge>
+
+                                        <CardContent className="space-y-2 px-4 py-0">
+                                            <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200/80 bg-slate-50/80 p-2">
+                                                <div className="flex items-center gap-2">
+                                                    <Avatar className="h-7 w-7 overflow-hidden rounded-full">
+                                                        <AvatarFallback className="bg-neutral-200 text-xs text-black">
+                                                            {getInitials(twibbon.creator_name)}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="leading-tight">
+                                                        <p className="text-[11px] font-medium text-slate-800">
+                                                            {twibbon.creator_name}
+                                                        </p>
+                                                        <p className="text-[10px] text-slate-500">
+                                                            Kreator
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <Badge variant="outline" className="text-[11px]">
+                                                    {twibbon.uses_count}x dipakai
+                                                </Badge>
+                                            </div>
                                         </CardContent>
-                                        <CardFooter className="gap-2 pb-5">
+
+                                        <CardFooter className="gap-2 px-4 pt-1 pb-4">
                                             <Button asChild variant="outline" size="sm">
                                                 <Link href={`/twibbon/${twibbon.slug}`}>
                                                     Detail
@@ -184,13 +220,18 @@ export default function TwibbonHome({
                         )}
                     </section>
 
-                    <section className="space-y-4">
+                    <section className="space-y-4 rounded-3xl border border-slate-200/70 bg-white/80 p-5 shadow-sm backdrop-blur md:p-6">
                         <div className="flex items-center gap-2">
                             <UsersIcon className="size-5 text-slate-700" />
                             <h2 className="text-2xl font-semibold text-slate-900">
                                 Kreator Naik Daun
                             </h2>
                         </div>
+
+                        <p className="text-sm text-slate-600">
+                            Kreator dengan performa penggunaan tertinggi dari
+                            twibbon-twibbon yang sudah tayang.
+                        </p>
 
                         {rising_creators.length === 0 ? (
                             <Card>
@@ -205,40 +246,59 @@ export default function TwibbonHome({
                         ) : (
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {rising_creators.map((creator, index) => (
-                                    <Card key={`${creator.name}-${index}`}>
-                                        <CardHeader>
-                                            <div className="flex items-center gap-3">
-                                                <Avatar className="h-12 w-12 overflow-hidden rounded-full border">
-                                                    <AvatarImage
-                                                        src={creator.profile_photo_url ?? undefined}
-                                                        alt={creator.name}
-                                                    />
-                                                    <AvatarFallback className="bg-neutral-200 text-black">
-                                                        {getInitials(creator.name)}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                                <div>
-                                                    <CardTitle className="text-lg">
-                                                        {creator.name}
-                                                    </CardTitle>
-                                                    <CardDescription>
-                                                        {creator.twibbon_count} twibbon
-                                                    </CardDescription>
+                                    <Card
+                                        key={`${creator.name}-${index}`}
+                                        className="overflow-hidden border-white/70 bg-white/95 py-0 shadow-sm"
+                                    >
+                                        <div className="h-1.5 bg-linear-to-r from-sky-300 via-emerald-300 to-orange-200" />
+
+                                        <CardHeader className="pb-2">
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className="h-12 w-12 overflow-hidden rounded-full border">
+                                                        <AvatarImage
+                                                            src={creator.profile_photo_url ?? undefined}
+                                                            alt={creator.name}
+                                                        />
+                                                        <AvatarFallback className="bg-neutral-200 text-black">
+                                                            {getInitials(creator.name)}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div>
+                                                        <CardTitle className="text-lg">
+                                                            {creator.name}
+                                                        </CardTitle>
+                                                        <CardDescription>
+                                                            Kreator naik daun
+                                                        </CardDescription>
+                                                    </div>
                                                 </div>
+
+                                                <Badge variant="outline">
+                                                    {creator.twibbon_count} twibbon
+                                                </Badge>
                                             </div>
                                         </CardHeader>
-                                        <CardContent className="space-y-3">
+
+                                        <CardContent className="space-y-3 pt-0">
                                             <p className="text-sm text-slate-600">
                                                 {creator.bio && creator.bio.trim() !== ''
                                                     ? creator.bio
                                                     : 'Kreator ini belum menambahkan bio.'}
                                             </p>
-                                            <Badge variant="secondary">
-                                                {creator.total_uses} total penggunaan
-                                            </Badge>
+
+                                            <div className="rounded-lg border border-slate-200/80 bg-slate-50/80 p-2.5">
+                                                <p className="text-xs text-slate-500">
+                                                    Total penggunaan
+                                                </p>
+                                                <p className="font-semibold text-slate-900">
+                                                    {creator.total_uses}
+                                                </p>
+                                            </div>
                                         </CardContent>
+
                                         {creator.featured_twibbon_slug && (
-                                            <CardFooter>
+                                            <CardFooter className="pb-5">
                                                 <Button asChild variant="outline" size="sm">
                                                     <Link href={`/twibbon/${creator.featured_twibbon_slug}`}>
                                                         Lihat Karya Terpopuler

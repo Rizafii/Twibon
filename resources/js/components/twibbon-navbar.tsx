@@ -47,10 +47,8 @@ export function TwibbonNavbar({ canRegister = true }: Props) {
                 SMKN 6 Twibbon
             </Link>
 
-            <div className="flex flex-wrap items-center gap-2">
-                <Button asChild variant="outline">
+            <div className="flex flex-wrap items-center gap-8">
                     <Link href="/catalog">Katalog</Link>
-                </Button>
 
                 {auth.user ? (
                     <>
@@ -62,9 +60,8 @@ export function TwibbonNavbar({ canRegister = true }: Props) {
 
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <button
-                                    type="button"
-                                    className="inline-flex h-auto items-center gap-2 rounded-md border border-input px-3 py-2 text-sm shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground"
+                                <div
+                                    className="inline-flex h-auto items-center gap-2 text-sm"
                                 >
                                     <Avatar className="h-6 w-6 overflow-hidden rounded-full">
                                         <AvatarImage
@@ -86,7 +83,7 @@ export function TwibbonNavbar({ canRegister = true }: Props) {
                                     </div>
 
                                     <ChevronDownIcon className="size-4 text-slate-500" />
-                                </button>
+                                </div>
                             </DropdownMenuTrigger>
 
                             <DropdownMenuContent align="end">
