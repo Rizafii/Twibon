@@ -39,6 +39,14 @@ test('upload page requires authentication', function () {
         ->assertRedirect(route('login'));
 });
 
+test('authenticated user visiting upload route is redirected to catalog', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get('/upload')
+        ->assertRedirect('/catalog');
+});
+
 test('my twibbon page requires authentication', function () {
     $this->get('/my-twibbon')
         ->assertRedirect(route('login'));
@@ -156,12 +164,13 @@ test('authenticated user can upload twibbon and it remains pending', function ()
     $user = User::factory()->create();
 
     $this->actingAs($user)
+        ->from('/catalog')
         ->post('/upload', [
             'name' => 'Earth Day 2026',
             'description' => 'Twibbon for earth day campaign.',
             'frame' => UploadedFile::fake()->image('frame.png', 900, 1200),
         ])
-        ->assertRedirect('/upload');
+        ->assertRedirect('/catalog');
 
     $this->assertDatabaseHas('twibone', [
         'name' => 'Earth Day 2026',
@@ -185,6 +194,37 @@ test('upload rejects twibbon frame with non 3:4 ratio', function () {
 
     $this->assertDatabaseMissing('twibone', [
         'name' => 'Wrong Ratio Campaign',
+    ]);
+});
+
+test('upload is rate limited per user', function () {
+    Storage::fake('public');
+
+    $user = User::factory()->create();
+
+    foreach (range(1, 5) as $attempt) {
+        $this->actingAs($user)
+            ->from('/catalog')
+            ->post('/upload', [
+                'name' => "Campaign {$attempt}",
+                'description' => "Upload attempt {$attempt}.",
+                'frame' => UploadedFile::fake()->image("frame-{$attempt}.png", 900, 1200),
+            ])
+            ->assertRedirect('/catalog');
+    }
+
+    $this->actingAs($user)
+        ->from('/catalog')
+        ->post('/upload', [
+            'name' => 'Campaign 6',
+            'description' => 'This one should be blocked by rate limit.',
+            'frame' => UploadedFile::fake()->image('frame-6.png', 900, 1200),
+        ])
+        ->assertRedirect('/catalog')
+        ->assertSessionHasErrors('frame');
+
+    $this->assertDatabaseMissing('twibone', [
+        'name' => 'Campaign 6',
     ]);
 });
 

@@ -12,6 +12,7 @@ import {
 import { useState, type FormEvent } from 'react';
 import { TwibbonFooter } from '@/components/twibbon-footer';
 import { TwibbonNavbar } from '@/components/twibbon-navbar';
+import { UploadTwibbonDialog } from '@/components/upload-twibbon-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -305,9 +306,17 @@ export default function TwibbonMine({ filters, stats, twibbons }: Props) {
                                     </CardDescription>
                                 </CardHeader>
                                 <CardFooter>
-                                    <Button asChild variant="outline">
-                                        <Link href="/upload">Upload Twibbon Baru</Link>
-                                    </Button>
+                                    <UploadTwibbonDialog>
+                                        {(openUploadDialog) => (
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={openUploadDialog}
+                                            >
+                                                Upload Twibbon Baru
+                                            </Button>
+                                        )}
+                                    </UploadTwibbonDialog>
                                 </CardFooter>
                             </Card>
                         ) : (

@@ -20,7 +20,7 @@ class TwibbonController extends Controller
 
         $trendingTwibbons = $approvedTwibbons
             ->sortByDesc('usages_count')
-            ->take(6)
+            ->take(10)
             ->values()
             ->map(function (Twibone $twibone): array {
                 return [
@@ -90,6 +90,7 @@ class TwibbonController extends Controller
                     'id' => $twibone->id,
                     'name' => $twibone->name,
                     'description' => $twibone->description,
+                    'created_at' => $twibone->created_at?->toIso8601String(),
                     'slug' => $twibone->url,
                     'preview_url' => asset('storage/'.ltrim($twibone->path, '/')),
                     'creator_name' => $twibone->creator?->name ?? 'Unknown',
@@ -128,6 +129,7 @@ class TwibbonController extends Controller
                 'id' => $twibbon->id,
                 'name' => $twibbon->name,
                 'description' => $twibbon->description,
+                'created_at' => $twibbon->created_at?->toIso8601String(),
                 'slug' => $twibbon->url,
                 'preview_url' => asset('storage/'.ltrim($twibbon->path, '/')),
                 'creator_name' => $twibbon->creator?->name ?? 'Unknown',

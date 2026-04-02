@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeftIcon } from 'lucide-react';
+import { CalendarDaysIcon, Link2Icon, Share2Icon, User } from 'lucide-react';
+import { useState } from 'react';
 import { TwibbonFooter } from '@/components/twibbon-footer';
 import { TwibbonNavbar } from '@/components/twibbon-navbar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -19,6 +20,7 @@ type Props = {
         id: number;
         name: string;
         description: string;
+        created_at: string | null;
         slug: string;
         preview_url: string;
         creator_name: string;
@@ -40,16 +42,52 @@ const getInitials = (name: string): string =>
         .map((part) => part[0]?.toUpperCase() ?? '')
         .join('');
 
+const formatCreatedAt = (value: string | null): string => {
+    if (!value) {
+        return '-';
+    }
+
+    return new Intl.DateTimeFormat('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+    }).format(new Date(value));
+};
+
 export default function TwibbonShow({ twibbon }: Props) {
+    const [shareFeedback, setShareFeedback] = useState<string>('Share');
+
+    const handleShare = async () => {
+        const shareUrl = window.location.href;
+
+        try {
+            if (navigator.share) {
+                await navigator.share({
+                    title: twibbon.name,
+                    text: 'Lihat twibbon ini',
+                    url: shareUrl,
+                });
+
+                return;
+            }
+
+            await navigator.clipboard.writeText(shareUrl);
+            setShareFeedback('Link disalin');
+            setTimeout(() => setShareFeedback('Share'), 1800);
+        } catch {
+            // Ignore share/copy failures to avoid blocking navigation flow.
+        }
+    };
+
     return (
         <>
             <Head title={twibbon.name} />
 
-            <div className="min-h-screen bg-[linear-gradient(140deg,#fffef5_0%,#f1f8ff_50%,#fff9f2_100%)] px-4 py-8 md:px-8 md:py-12">
+            <div className="min-h-screen bg-[radial-gradient(circle_at_12%_18%,#ffe7bc_0%,transparent_36%),radial-gradient(circle_at_84%_12%,#c9f4ff_0%,transparent_38%),linear-gradient(180deg,#fffdf8_0%,#edf6ff_100%)] px-4 py-6 md:px-8 md:py-8">
                 <div className="mx-auto max-w-375">
                     <TwibbonNavbar />
 
-                    <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
+                    <div className="grid gap-6 lg:grid-cols-[1.2fr_1.8fr] max-w-6xl mx-auto">
                         <Card className="overflow-hidden py-0">
                             <div className="aspect-3/4 bg-slate-100">
                                 <img
@@ -71,14 +109,22 @@ export default function TwibbonShow({ twibbon }: Props) {
                             </CardHeader>
 
                             <CardContent className="space-y-4">
-                                <div className="flex flex-wrap gap-2">
-                                    <Badge variant="outline">
-                                        Creator: {twibbon.creator_name}
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <Badge  className="rounded-full px-3 py-1 text-xs">
+                                        <CalendarDaysIcon className="size-3.5" />
+                                        Dibuat pada {formatCreatedAt(twibbon.created_at)}
                                     </Badge>
-                                    <Badge variant="secondary">
-                                        {twibbon.uses_count} kali dipakai
+                                    <Badge  className="max-w-full rounded-full px-3 py-1 text-xs">
+                                        <Link2Icon className="size-3.5 shrink-0" />
+                                        <span className="truncate">/twibbon/{twibbon.slug}</span>
                                     </Badge>
                                 </div>
+
+                                <p className="flex items-center gap-1 text-sm">
+                                    <User size={15} />
+                                    {twibbon.uses_count}
+                                </p>
+
 
                                 <div className="overflow-hidden rounded-xl border bg-slate-50">
                                     {twibbon.creator.banner_photo_url ? (
@@ -127,10 +173,20 @@ export default function TwibbonShow({ twibbon }: Props) {
                                 </p>
                             </CardContent>
 
-                            <CardFooter>
-                                <Button asChild size="lg" className="w-full">
+                            <CardFooter className="flex-col gap-2 md:flex-row">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full md:w-auto"
+                                    onClick={handleShare}
+                                >
+                                    <Share2Icon className="size-4" />
+                                    {shareFeedback}
+                                </Button>
+
+                                <Button asChild size="lg" className="w-full md:ml-auto md:w-auto">
                                     <Link href={`/editor/${twibbon.slug}`}>
-                                        Use This Twibbon
+                                        Pilih Foto dan Edit
                                     </Link>
                                 </Button>
                             </CardFooter>

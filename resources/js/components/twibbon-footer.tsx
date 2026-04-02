@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react';
+import { UploadTwibbonDialog } from '@/components/upload-twibbon-dialog';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -20,9 +21,17 @@ export function TwibbonFooter({ className }: Props) {
                     <Link href="/catalog" className="hover:text-slate-900">
                         Katalog
                     </Link>
-                    <Link href="/upload" className="hover:text-slate-900">
-                        Upload
-                    </Link>
+                    <UploadTwibbonDialog>
+                        {(openUploadDialog) => (
+                            <button
+                                type="button"
+                                onClick={openUploadDialog}
+                                className="hover:text-slate-900"
+                            >
+                                Upload
+                            </button>
+                        )}
+                    </UploadTwibbonDialog>
                 </div>
             </div>
         </footer>

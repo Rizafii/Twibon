@@ -1,8 +1,9 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { SearchIcon, SparklesIcon } from 'lucide-react';
+import { SearchIcon, SparklesIcon, User } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { TwibbonFooter } from '@/components/twibbon-footer';
 import { TwibbonNavbar } from '@/components/twibbon-navbar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,6 +20,7 @@ type TwibbonItem = {
     id: number;
     name: string;
     description: string;
+    created_at?: string | null;
     slug: string;
     preview_url: string;
     creator_name: string;
@@ -51,6 +53,31 @@ const sanitizePaginationLabel = (label: string): string =>
         .replaceAll('&raquo;', '»')
         .replace(/<[^>]+>/g, '')
         .trim();
+
+const getInitials = (name: string): string =>
+    name
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase() ?? '')
+        .join('');
+
+const formatCreatedAt = (value?: string | null): string => {
+    if (!value) {
+        return 'Tanggal tidak tersedia';
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return 'Tanggal tidak tersedia';
+    }
+
+    return new Intl.DateTimeFormat('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+    }).format(date);
+};
 
 export default function TwibbonIndex({
     canRegister,
@@ -130,15 +157,15 @@ export default function TwibbonIndex({
                             </CardHeader>
                         </Card>
                     ) : (
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-sm md:p-10">
                             {twibbons.data.map((twibbon) => (
                                 <Link
                                     key={twibbon.id}
                                     href={`/twibbon/${twibbon.slug}`}
                                     className="block"
                                 >
-                                    <Card className="overflow-hidden py-0 transition-shadow hover:shadow-md">
-                                        <div className="h-56 bg-slate-100">
+                                    <Card className="overflow-hidden bg-white/95 py-0 shadow-none transition-shadow hover:shadow-md">
+                                        <div className="relative h-56 bg-slate-100">
                                             <img
                                                 src={twibbon.preview_url}
                                                 alt={twibbon.name}
@@ -147,21 +174,39 @@ export default function TwibbonIndex({
                                             />
                                         </div>
 
-                                        <CardHeader className="pb-3">
-                                            <CardTitle className="truncate text-lg">
+                                        <CardHeader className="space-y-2 px-4">
+                                            <CardTitle className="min-h-10 text-base leading-5 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">
                                                 {twibbon.name}
                                             </CardTitle>
-                                            <CardDescription>
-                                                {twibbon.description}
+                                            <CardDescription className="min-h-8 text-xs leading-4 text-slate-500 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">
+                                                {twibbon.description && twibbon.description.trim() !== ''
+                                                    ? twibbon.description
+                                                    : 'Twibbon ini belum memiliki deskripsi.'}
                                             </CardDescription>
                                         </CardHeader>
 
-                                        <CardContent className="pb-5 pt-0">
-                                            <div className="flex items-center justify-between gap-2 text-xs text-slate-600">
-                                                <Badge variant="outline">
-                                                    {twibbon.creator_name}
-                                                </Badge>
-                                                <span>{twibbon.uses_count} dipakai</span>
+                                        <CardContent className=" px-4 pb-4 pt-0">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <div className="flex min-w-0 flex-1 items-center gap-2">
+                                                    <Avatar className="h-7 w-7 overflow-hidden rounded-full">
+                                                        <AvatarFallback className="bg-neutral-200 text-xs text-black">
+                                                            {getInitials(twibbon.creator_name)}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="min-w-0 leading-tight">
+                                                        <p className="truncate text-[11px] font-medium text-slate-800">
+                                                            {twibbon.creator_name}
+                                                        </p>
+                                                        <p className="text-[10px] text-slate-500">
+                                                            Dibuat pada {formatCreatedAt(twibbon.created_at)}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="shrink-0 text-xs flex items-center gap-1">
+                                                    <User size={12} />
+                                                    {twibbon.uses_count}
+                                                </div>
                                             </div>
                                         </CardContent>
                                     </Card>

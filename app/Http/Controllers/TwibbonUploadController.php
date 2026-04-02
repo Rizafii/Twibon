@@ -5,19 +5,30 @@ namespace App\Http\Controllers;
 use App\Models\Twibone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class TwibbonUploadController extends Controller
 {
-    public function create(): Response
+    public function create(): RedirectResponse
     {
-        return Inertia::render('twibbon/upload');
+        return to_route('twibbon.catalog');
     }
 
     public function store(Request $request): RedirectResponse
     {
+        $rateLimitKey = 'twibbon-upload:'.($request->user()?->id ?? $request->ip());
+
+        if (RateLimiter::tooManyAttempts($rateLimitKey, 5)) {
+            $seconds = RateLimiter::availableIn($rateLimitKey);
+
+            return back()->withErrors([
+                'frame' => "Terlalu banyak percobaan upload. Coba lagi dalam {$seconds} detik.",
+            ]);
+        }
+
+        RateLimiter::hit($rateLimitKey, 60);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'description' => ['required', 'string', 'max:1200'],
@@ -54,6 +65,6 @@ class TwibbonUploadController extends Controller
             'is_approved' => false,
         ]);
 
-        return to_route('twibbon.upload.create')->with('success', 'Menunggu approval admin');
+        return back()->with('success', 'Menunggu approval admin');
     }
 }

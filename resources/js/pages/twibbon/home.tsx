@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { ArrowRightIcon, Link2Icon, TrendingUpIcon, User, UsersIcon } from 'lucide-react';
 import { TwibbonFooter } from '@/components/twibbon-footer';
 import { TwibbonNavbar } from '@/components/twibbon-navbar';
+import { UploadTwibbonDialog } from '@/components/upload-twibbon-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -87,9 +88,18 @@ export default function TwibbonHome({
                                             <ArrowRightIcon className="size-4" />
                                         </Link>
                                     </Button>
-                                    <Button asChild variant="outline" size="lg">
-                                        <Link href="/upload">Upload Twibbon</Link>
-                                    </Button>
+                                    <UploadTwibbonDialog>
+                                        {(openUploadDialog) => (
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="lg"
+                                                onClick={openUploadDialog}
+                                            >
+                                                Upload Twibbon
+                                            </Button>
+                                        )}
+                                    </UploadTwibbonDialog>
                                 </div>
                             </div>
                             <img src="/assets/hero.png" alt="Hero" className='w-auto h-42 lg:h-72' />
@@ -97,10 +107,17 @@ export default function TwibbonHome({
                     </section>
 
                     <section className="space-y-4 rounded-3xl border border-slate-200/70 bg-white/80 p-5 shadow-sm backdrop-blur md:p-6">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-between gap-3">
                             <h2 className="text-2xl font-semibold text-slate-900">
                                 Twibbon Sedang Trending
                             </h2>
+                            <Link
+                                href="/catalog"
+                                className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900"
+                            >
+                                Jelajahi semua twibbon
+                                <ArrowRightIcon className="size-4" />
+                            </Link>
                         </div>
 
                         <p className="text-sm text-slate-600">
@@ -118,12 +135,12 @@ export default function TwibbonHome({
                                 </CardHeader>
                             </Card>
                         ) : (
-                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                            <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0 lg:grid-cols-5">
                                 {trending_twibbons.map((twibbon) => (
                                     <Link
                                         key={twibbon.id}
                                         href={`/twibbon/${twibbon.slug}`}
-                                        className="block"
+                                        className="block min-w-60 shrink-0 snap-start sm:min-w-0"
                                     >
                                         <Card className="overflow-hidden bg-white/95 py-0 shadow-none transition-shadow hover:shadow-md">
                                             <div className="relative h-56 bg-slate-100">
@@ -133,13 +150,6 @@ export default function TwibbonHome({
                                                     className="h-full w-full object-cover"
                                                     loading="lazy"
                                                 />
-
-                                                <Badge
-                                                    variant="secondary"
-                                                    className="absolute top-2 left-2 text-[11px]"
-                                                >
-                                                    Trending
-                                                </Badge>
                                             </div>
 
                                             <CardHeader className="px-4">
