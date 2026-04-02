@@ -1,9 +1,14 @@
 import { Link } from '@inertiajs/react';
+import { cn } from '@/lib/utils';
 
-export function TwibbonFooter() {
+type Props = {
+    className?: string;
+};
+
+export function TwibbonFooter({ className }: Props) {
     return (
-        <footer className="mt-10 border-t border-white/60 bg-white/70">
-            <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-sm text-slate-600 md:flex-row md:items-center md:justify-between md:px-8">
+        <footer className={cn('mt-10 mx-auto max-w-375 w-full rounded-3xl bg-primary', className)}>
+            <div className="flex flex-col gap-2 px-4 py-6 text-sm text-slate-600 md:flex-row md:items-center md:justify-between md:px-8">
                 <p>
                     Twibone Studio © {new Date().getFullYear()}.
                 </p>

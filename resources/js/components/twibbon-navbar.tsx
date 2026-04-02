@@ -39,16 +39,22 @@ export function TwibbonNavbar({ canRegister = true }: Props) {
     const { auth } = usePage<SharedProps>().props;
 
     return (
-        <header className="mb-8 flex flex-col gap-4 rounded-2xl border border-white/60 bg-white/80 p-5 shadow-sm backdrop-blur md:flex-row md:items-center md:justify-between">
+        <header className="relative mb-8 flex flex-col gap-4 rounded-2xl border border-white/60 bg-white/80 p-5 shadow-sm backdrop-blur md:flex-row md:items-center md:justify-between">
             <Link
                 href={home()}
-                className="text-xl font-semibold tracking-tight text-slate-900"
+                className="  tracking-tight"
             >
-                SMKN 6 Twibbon
+                <p className='text-xl font-semibold text-slate-900'>Creative Six</p>
             </Link>
 
-            <div className="flex flex-wrap items-center gap-8">
-                    <Link href="/catalog">Katalog</Link>
+            <Link
+                href="/catalog"
+                className="self-center text-sm font-medium text-slate-700 transition-colors hover:text-slate-900 md:absolute md:left-1/2 md:-translate-x-1/2"
+            >
+                Katalog
+            </Link>
+
+            <div className="flex flex-wrap items-center gap-4 md:ml-auto">
 
                 {auth.user ? (
                     <>
@@ -61,7 +67,7 @@ export function TwibbonNavbar({ canRegister = true }: Props) {
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <div
-                                    className="inline-flex h-auto items-center gap-2 text-sm"
+                                    className="inline-flex h-auto items-center gap-2 text-sm cursor-pointer"
                                 >
                                     <Avatar className="h-6 w-6 overflow-hidden rounded-full">
                                         <AvatarImage
@@ -88,6 +94,9 @@ export function TwibbonNavbar({ canRegister = true }: Props) {
 
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem asChild>
+                                    <Link href="/my-twibbon">Twibbon Saya</Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
                                     <Link href="/upload">Upload Twibbon</Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem asChild>
@@ -106,7 +115,7 @@ export function TwibbonNavbar({ canRegister = true }: Props) {
                         </DropdownMenu>
                     </>
                 ) : (
-                    <>
+                    <div className='flex gap-4 items-center'>
                         <Button asChild variant="outline">
                             <Link href={login()}>Log in</Link>
                         </Button>
@@ -116,7 +125,7 @@ export function TwibbonNavbar({ canRegister = true }: Props) {
                                 <Link href={register()}>Register</Link>
                             </Button>
                         )}
-                    </>
+                    </div>
                 )}
             </div>
         </header>

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Twibone extends Model
 {
@@ -39,5 +40,17 @@ class Twibone extends Model
     public function links(): HasMany
     {
         return $this->hasMany(Link::class, 'twibone_uid');
+    }
+
+    public function linkClicks(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            LinkClick::class,
+            Link::class,
+            'twibone_uid',
+            'link_uid',
+            'id',
+            'id',
+        );
     }
 }

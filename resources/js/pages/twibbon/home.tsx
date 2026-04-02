@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowRightIcon, Link2Icon, TrendingUpIcon, UsersIcon } from 'lucide-react';
+import { ArrowRightIcon, Link2Icon, TrendingUpIcon, User, UsersIcon } from 'lucide-react';
 import { TwibbonFooter } from '@/components/twibbon-footer';
 import { TwibbonNavbar } from '@/components/twibbon-navbar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -64,7 +64,7 @@ export default function TwibbonHome({
                     <TwibbonNavbar canRegister={canRegister} />
 
                     <section className="rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-sm md:p-10">
-                        <div className="grid gap-8 lg:grid-cols-[1.3fr_1fr]">
+                        <div className="flex justify-between lg:flex-row flex-col-reverse gap-12 items-start lg:items-center">
                             <div className="space-y-4">
                                 <Badge variant="secondary" className="w-fit">
                                     Portal Resmi SMK Negeri 6 Surakarta
@@ -92,41 +92,12 @@ export default function TwibbonHome({
                                     </Button>
                                 </div>
                             </div>
-
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-lg">
-                                        Statistik Cepat
-                                    </CardTitle>
-                                    <CardDescription>
-                                        Snapshot aktivitas platform saat ini.
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-3">
-                                    <div className="rounded-lg border bg-slate-50 p-3">
-                                        <p className="text-xs text-slate-500">
-                                            Total Twibbon Approved
-                                        </p>
-                                        <p className="text-2xl font-semibold text-slate-900">
-                                            {stats.approved_twibbons}
-                                        </p>
-                                    </div>
-                                    <div className="rounded-lg border bg-slate-50 p-3">
-                                        <p className="text-xs text-slate-500">
-                                            Fokus Platform
-                                        </p>
-                                        <p className="font-medium text-slate-900">
-                                            Twibbon Sekolah + Shortlink Acara
-                                        </p>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                            <img src="/assets/hero.png" alt="Hero" className='w-auto h-42 lg:h-72' />
                         </div>
                     </section>
 
                     <section className="space-y-4 rounded-3xl border border-slate-200/70 bg-white/80 p-5 shadow-sm backdrop-blur md:p-6">
                         <div className="flex items-center gap-2">
-                            <TrendingUpIcon className="size-5 text-slate-700" />
                             <h2 className="text-2xl font-semibold text-slate-900">
                                 Twibbon Sedang Trending
                             </h2>
@@ -147,74 +118,62 @@ export default function TwibbonHome({
                                 </CardHeader>
                             </Card>
                         ) : (
-                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                                 {trending_twibbons.map((twibbon) => (
-                                    <Card
+                                    <Link
                                         key={twibbon.id}
-                                        className="overflow-hidden border-white/70 bg-white/95 py-0 shadow-sm"
+                                        href={`/twibbon/${twibbon.slug}`}
+                                        className="block"
                                     >
-                                        <div className="relative h-44 bg-slate-100">
-                                            <img
-                                                src={twibbon.preview_url}
-                                                alt={twibbon.name}
-                                                className="mx-auto h-full w-auto max-w-full object-contain"
-                                                loading="lazy"
-                                            />
+                                        <Card className="overflow-hidden bg-white/95 py-0 shadow-none transition-shadow hover:shadow-md">
+                                            <div className="relative h-56 bg-slate-100">
+                                                <img
+                                                    src={twibbon.preview_url}
+                                                    alt={twibbon.name}
+                                                    className="h-full w-full object-cover"
+                                                    loading="lazy"
+                                                />
 
-                                            <Badge
-                                                variant="secondary"
-                                                className="absolute top-2 left-2 text-[11px]"
-                                            >
-                                                Trending
-                                            </Badge>
-                                        </div>
-
-                                        <CardHeader className="space-y-1 px-4 pt-3 pb-1">
-                                            <CardTitle className="truncate text-base">
-                                                {twibbon.name}
-                                            </CardTitle>
-                                            <CardDescription className="text-xs">
-                                                Oleh {twibbon.creator_name}
-                                            </CardDescription>
-                                        </CardHeader>
-
-                                        <CardContent className="space-y-2 px-4 py-0">
-                                            <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200/80 bg-slate-50/80 p-2">
-                                                <div className="flex items-center gap-2">
-                                                    <Avatar className="h-7 w-7 overflow-hidden rounded-full">
-                                                        <AvatarFallback className="bg-neutral-200 text-xs text-black">
-                                                            {getInitials(twibbon.creator_name)}
-                                                        </AvatarFallback>
-                                                    </Avatar>
-                                                    <div className="leading-tight">
-                                                        <p className="text-[11px] font-medium text-slate-800">
-                                                            {twibbon.creator_name}
-                                                        </p>
-                                                        <p className="text-[10px] text-slate-500">
-                                                            Kreator
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                <Badge variant="outline" className="text-[11px]">
-                                                    {twibbon.uses_count}x dipakai
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="absolute top-2 left-2 text-[11px]"
+                                                >
+                                                    Trending
                                                 </Badge>
                                             </div>
-                                        </CardContent>
 
-                                        <CardFooter className="gap-2 px-4 pt-1 pb-4">
-                                            <Button asChild variant="outline" size="sm">
-                                                <Link href={`/twibbon/${twibbon.slug}`}>
-                                                    Detail
-                                                </Link>
-                                            </Button>
-                                            <Button asChild size="sm" className="ml-auto">
-                                                <Link href={`/editor/${twibbon.slug}`}>
-                                                    Pakai
-                                                </Link>
-                                            </Button>
-                                        </CardFooter>
-                                    </Card>
+                                            <CardHeader className="px-4">
+                                                <CardTitle className="truncate text-base">
+                                                    {twibbon.name}
+                                                </CardTitle>
+                                                
+                                            </CardHeader>
+
+                                            <CardContent className=" px-4 pb-4 pt-0">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <Avatar className="h-7 w-7 overflow-hidden rounded-full">
+                                                            <AvatarFallback className="bg-neutral-200 text-xs text-black">
+                                                                {getInitials(twibbon.creator_name)}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        <div className="leading-tight">
+                                                            <p className="text-[11px] font-medium text-slate-800">
+                                                                {twibbon.creator_name}
+                                                            </p>
+                                                            <p className="text-[10px] text-slate-500">
+                                                                Kreator
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="text-xs flex items-center gap-1">
+                                                        <User size={12}/>{twibbon.uses_count}
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </Link>
                                 ))}
                             </div>
                         )}

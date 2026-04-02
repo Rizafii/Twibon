@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\TwibbonApprovalController;
 use App\Http\Controllers\TwibbonController;
 use App\Http\Controllers\TwibbonEditorController;
+use App\Http\Controllers\TwibbonMineController;
 use App\Http\Controllers\TwibbonUploadController;
 use Illuminate\Support\Facades\Route;
 
@@ -15,6 +16,10 @@ Route::post('/editor/{slug}/usage', [TwibbonEditorController::class, 'storeUsage
 Route::middleware(['auth'])->group(function () {
     Route::get('/upload', [TwibbonUploadController::class, 'create'])->name('twibbon.upload.create');
     Route::post('/upload', [TwibbonUploadController::class, 'store'])->name('twibbon.upload.store');
+    Route::get('/my-twibbon', [TwibbonMineController::class, 'index'])->name('twibbon.mine');
+    Route::get('/my-twibbon/{twibone}/edit', [TwibbonMineController::class, 'edit'])->name('twibbon.mine.edit');
+    Route::patch('/my-twibbon/{twibone}', [TwibbonMineController::class, 'update'])->name('twibbon.mine.update');
+    Route::delete('/my-twibbon/{twibone}', [TwibbonMineController::class, 'destroy'])->name('twibbon.mine.destroy');
 });
 
 Route::middleware(['auth', 'verified', 'admin'])->group(function () {

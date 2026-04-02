@@ -440,27 +440,8 @@ export default function TwibbonEditor({ twibbon }: Props) {
             <Head title={`Editor - ${twibbon.name}`} />
 
             <div className="min-h-screen bg-[linear-gradient(180deg,#fffdfa_0%,#eef8ff_100%)] px-4 py-8 md:px-8 md:py-12">
-                <div className="mx-auto max-w-6xl space-y-6">
+                <div className="mx-auto max-w-375 space-y-6">
                     <TwibbonNavbar />
-
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">
-                                Editor Twibbon
-                            </h1>
-                            <p className="text-sm text-slate-600">
-                                {twibbon.name}
-                            </p>
-                        </div>
-
-                        <div className="flex gap-2">
-                            <Button asChild variant="outline" size="sm">
-                                <Link href="/catalog">
-                                    Kembali ke katalog
-                                </Link>
-                            </Button>
-                        </div>
-                    </div>
 
                     <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
                         <Card>

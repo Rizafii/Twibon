@@ -46,17 +46,8 @@ export default function TwibbonShow({ twibbon }: Props) {
             <Head title={twibbon.name} />
 
             <div className="min-h-screen bg-[linear-gradient(140deg,#fffef5_0%,#f1f8ff_50%,#fff9f2_100%)] px-4 py-8 md:px-8 md:py-12">
-                <div className="mx-auto max-w-6xl">
+                <div className="mx-auto max-w-375">
                     <TwibbonNavbar />
-
-                    <div className="mb-6">
-                        <Button asChild variant="outline" size="sm">
-                            <Link href="/catalog">
-                                <ArrowLeftIcon className="size-4" />
-                                Kembali ke katalog
-                            </Link>
-                        </Button>
-                    </div>
 
                     <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
                         <Card className="overflow-hidden py-0">
@@ -147,7 +138,7 @@ export default function TwibbonShow({ twibbon }: Props) {
                     </div>
                 </div>
 
-                <TwibbonFooter />
+                <TwibbonFooter/>
             </div>
         </>
     );

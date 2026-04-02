@@ -59,7 +59,7 @@ export default function TwibbonUpload() {
             <Head title="Upload Twibbon" />
 
             <div className="min-h-screen bg-[radial-gradient(circle_at_20%_15%,#dcfce7_0%,transparent_40%),radial-gradient(circle_at_85%_20%,#ffe4cc_0%,transparent_35%),linear-gradient(180deg,#fffdfa_0%,#f5f8ff_100%)] px-4 py-8 md:px-8 md:py-12">
-                <div className="mx-auto max-w-6xl space-y-6">
+                <div className="mx-auto max-w-357 space-y-6">
                     <TwibbonNavbar />
 
                     <div className="max-w-3xl space-y-6">
@@ -176,7 +176,7 @@ export default function TwibbonUpload() {
                     </div>
                 </div>
 
-                <TwibbonFooter />
+                <TwibbonFooter/>
             </div>
         </>
     );
