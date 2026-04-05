@@ -3,6 +3,7 @@ import { CalendarDaysIcon, Link2Icon, Share2Icon, User } from 'lucide-react';
 import { useState } from 'react';
 import { TwibbonFooter } from '@/components/twibbon-footer';
 import { TwibbonNavbar } from '@/components/twibbon-navbar';
+import { VerifiedUserName } from '@/components/verified-user-name';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,10 +26,12 @@ type Props = {
         preview_url: string;
         creator_name: string;
         creator: {
+            id: number | null;
             name: string;
             bio?: string | null;
             profile_photo_url?: string | null;
             banner_photo_url?: string | null;
+            verified: boolean;
         };
         uses_count: number;
     };
@@ -87,7 +90,7 @@ export default function TwibbonShow({ twibbon }: Props) {
                 <div className="mx-auto max-w-375">
                     <TwibbonNavbar />
 
-                    <div className="grid gap-6 lg:grid-cols-[1.2fr_1.8fr] max-w-6xl mx-auto">
+                    <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1.2fr_1.8fr]">
                         <Card className="overflow-hidden py-0">
                             <div className="aspect-3/4 bg-slate-100">
                                 <img
@@ -110,13 +113,16 @@ export default function TwibbonShow({ twibbon }: Props) {
 
                             <CardContent className="space-y-4">
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <Badge  className="rounded-full px-3 py-1 text-xs">
+                                    <Badge className="rounded-full px-3 py-1 text-xs">
                                         <CalendarDaysIcon className="size-3.5" />
-                                        Dibuat pada {formatCreatedAt(twibbon.created_at)}
+                                        Dibuat pada{' '}
+                                        {formatCreatedAt(twibbon.created_at)}
                                     </Badge>
-                                    <Badge  className="max-w-full rounded-full px-3 py-1 text-xs">
+                                    <Badge className="max-w-full rounded-full px-3 py-1 text-xs">
                                         <Link2Icon className="size-3.5 shrink-0" />
-                                        <span className="truncate">/twibbon/{twibbon.slug}</span>
+                                        <span className="truncate">
+                                            /twibbon/{twibbon.slug}
+                                        </span>
                                     </Badge>
                                 </div>
 
@@ -125,11 +131,12 @@ export default function TwibbonShow({ twibbon }: Props) {
                                     {twibbon.uses_count}
                                 </p>
 
-
                                 <div className="overflow-hidden rounded-xl border bg-slate-50">
                                     {twibbon.creator.banner_photo_url ? (
                                         <img
-                                            src={twibbon.creator.banner_photo_url}
+                                            src={
+                                                twibbon.creator.banner_photo_url
+                                            }
                                             alt={`Banner ${twibbon.creator.name}`}
                                             className="h-24 w-full object-cover"
                                         />
@@ -141,17 +148,50 @@ export default function TwibbonShow({ twibbon }: Props) {
                                         <div className="flex items-center gap-3">
                                             <Avatar className="h-12 w-12 overflow-hidden rounded-full border">
                                                 <AvatarImage
-                                                    src={twibbon.creator.profile_photo_url ?? undefined}
+                                                    src={
+                                                        twibbon.creator
+                                                            .profile_photo_url ??
+                                                        undefined
+                                                    }
                                                     alt={twibbon.creator.name}
                                                 />
                                                 <AvatarFallback className="bg-neutral-200 text-black">
-                                                    {getInitials(twibbon.creator.name)}
+                                                    {getInitials(
+                                                        twibbon.creator.name,
+                                                    )}
                                                 </AvatarFallback>
                                             </Avatar>
                                             <div>
-                                                <p className="font-medium text-slate-900">
-                                                    {twibbon.creator.name}
-                                                </p>
+                                                {twibbon.creator.id !== null ? (
+                                                    <Link
+                                                        href={`/creator/${twibbon.creator.id}`}
+                                                        className="font-medium text-slate-900 hover:underline"
+                                                    >
+                                                        <VerifiedUserName
+                                                            name={
+                                                                twibbon.creator
+                                                                    .name
+                                                            }
+                                                            verified={
+                                                                twibbon.creator
+                                                                    .verified
+                                                            }
+                                                        />
+                                                    </Link>
+                                                ) : (
+                                                    <p className="font-medium text-slate-900">
+                                                        <VerifiedUserName
+                                                            name={
+                                                                twibbon.creator
+                                                                    .name
+                                                            }
+                                                            verified={
+                                                                twibbon.creator
+                                                                    .verified
+                                                            }
+                                                        />
+                                                    </p>
+                                                )}
                                                 <p className="text-xs text-slate-500">
                                                     Creator profile
                                                 </p>
@@ -159,7 +199,8 @@ export default function TwibbonShow({ twibbon }: Props) {
                                         </div>
 
                                         <p className="text-sm text-slate-600">
-                                            {twibbon.creator.bio && twibbon.creator.bio.trim() !== ''
+                                            {twibbon.creator.bio &&
+                                            twibbon.creator.bio.trim() !== ''
                                                 ? twibbon.creator.bio
                                                 : 'Creator belum menambahkan bio.'}
                                         </p>
@@ -184,7 +225,11 @@ export default function TwibbonShow({ twibbon }: Props) {
                                     {shareFeedback}
                                 </Button>
 
-                                <Button asChild size="lg" className="w-full md:ml-auto md:w-auto">
+                                <Button
+                                    asChild
+                                    size="lg"
+                                    className="w-full md:ml-auto md:w-auto"
+                                >
                                     <Link href={`/editor/${twibbon.slug}`}>
                                         Pilih Foto dan Edit
                                     </Link>
@@ -194,7 +239,7 @@ export default function TwibbonShow({ twibbon }: Props) {
                     </div>
                 </div>
 
-                <TwibbonFooter/>
+                <TwibbonFooter />
             </div>
         </>
     );

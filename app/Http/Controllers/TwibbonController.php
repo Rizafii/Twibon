@@ -13,7 +13,7 @@ class TwibbonController extends Controller
     public function home(): Response
     {
         $approvedTwibbons = Twibone::query()
-            ->with('creator:id,name,bio,profile_photo_path')
+            ->with('creator:id,name,bio,profile_photo_path,verified')
             ->withCount('usages')
             ->where('is_approved', true)
             ->get();
@@ -27,14 +27,16 @@ class TwibbonController extends Controller
                     'id' => $twibone->id,
                     'name' => $twibone->name,
                     'slug' => $twibone->url,
-                    'preview_url' => asset('storage/'.ltrim($twibone->path, '/')),
+                    'preview_url' => asset('storage/' . ltrim($twibone->path, '/')),
+                    'creator_id' => $twibone->creator?->id,
                     'creator_name' => $twibone->creator?->name ?? 'Unknown',
+                    'creator_verified' => (bool) ($twibone->creator?->verified ?? false),
                     'uses_count' => $twibone->usages_count,
                 ];
             });
 
         $risingCreators = $approvedTwibbons
-            ->filter(fn (Twibone $twibone): bool => $twibone->creator !== null)
+            ->filter(fn(Twibone $twibone): bool => $twibone->creator !== null)
             ->groupBy('users_uid')
             ->map(function ($creatorTwibbons): array {
                 /** @var Twibone $firstTwibbon */
@@ -42,13 +44,15 @@ class TwibbonController extends Controller
                 $topTwibbon = $creatorTwibbons->sortByDesc('usages_count')->first();
 
                 $profilePhotoUrl = $firstTwibbon->creator?->profile_photo_path
-                    ? asset('storage/'.ltrim((string) $firstTwibbon->creator->profile_photo_path, '/'))
+                    ? asset('storage/' . ltrim((string) $firstTwibbon->creator->profile_photo_path, '/'))
                     : null;
 
                 return [
+                    'id' => $firstTwibbon->creator?->id,
                     'name' => $firstTwibbon->creator?->name ?? 'Unknown',
                     'bio' => $firstTwibbon->creator?->bio,
                     'profile_photo_url' => $profilePhotoUrl,
+                    'verified' => (bool) ($firstTwibbon->creator?->verified ?? false),
                     'twibbon_count' => $creatorTwibbons->count(),
                     'total_uses' => $creatorTwibbons->sum('usages_count'),
                     'featured_twibbon_slug' => $topTwibbon?->url,
@@ -73,7 +77,7 @@ class TwibbonController extends Controller
         $search = trim((string) $request->string('search'));
 
         $twibbons = Twibone::query()
-            ->with('creator:id,name')
+            ->with('creator:id,name,verified')
             ->withCount('usages')
             ->where('is_approved', true)
             ->when($search !== '', function ($query) use ($search): void {
@@ -92,8 +96,10 @@ class TwibbonController extends Controller
                     'description' => $twibone->description,
                     'created_at' => $twibone->created_at?->toIso8601String(),
                     'slug' => $twibone->url,
-                    'preview_url' => asset('storage/'.ltrim($twibone->path, '/')),
+                    'preview_url' => asset('storage/' . ltrim($twibone->path, '/')),
+                    'creator_id' => $twibone->creator?->id,
                     'creator_name' => $twibone->creator?->name ?? 'Unknown',
+                    'creator_verified' => (bool) ($twibone->creator?->verified ?? false),
                     'uses_count' => $twibone->usages_count,
                 ];
             });
@@ -110,18 +116,18 @@ class TwibbonController extends Controller
     public function show(string $slug): Response
     {
         $twibbon = Twibone::query()
-            ->with('creator:id,name,bio,profile_photo_path,banner_photo_path')
+            ->with('creator:id,name,bio,profile_photo_path,banner_photo_path,verified')
             ->withCount('usages')
             ->where('is_approved', true)
             ->where('url', $slug)
             ->firstOrFail();
 
         $creatorProfilePhotoUrl = $twibbon->creator?->profile_photo_path
-            ? asset('storage/'.ltrim((string) $twibbon->creator->profile_photo_path, '/'))
+            ? asset('storage/' . ltrim((string) $twibbon->creator->profile_photo_path, '/'))
             : null;
 
         $creatorBannerPhotoUrl = $twibbon->creator?->banner_photo_path
-            ? asset('storage/'.ltrim((string) $twibbon->creator->banner_photo_path, '/'))
+            ? asset('storage/' . ltrim((string) $twibbon->creator->banner_photo_path, '/'))
             : null;
 
         return Inertia::render('twibbon/show', [
@@ -131,13 +137,15 @@ class TwibbonController extends Controller
                 'description' => $twibbon->description,
                 'created_at' => $twibbon->created_at?->toIso8601String(),
                 'slug' => $twibbon->url,
-                'preview_url' => asset('storage/'.ltrim($twibbon->path, '/')),
+                'preview_url' => asset('storage/' . ltrim($twibbon->path, '/')),
                 'creator_name' => $twibbon->creator?->name ?? 'Unknown',
                 'creator' => [
+                    'id' => $twibbon->creator?->id,
                     'name' => $twibbon->creator?->name ?? 'Unknown',
                     'bio' => $twibbon->creator?->bio,
                     'profile_photo_url' => $creatorProfilePhotoUrl,
                     'banner_photo_url' => $creatorBannerPhotoUrl,
+                    'verified' => (bool) ($twibbon->creator?->verified ?? false),
                 ],
                 'uses_count' => $twibbon->usages_count,
             ],

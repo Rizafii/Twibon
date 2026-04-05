@@ -17,6 +17,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
     'email',
     'password',
     'is_admin',
+    'verified',
     'bio',
     'profile_photo_path',
     'banner_photo_path',
@@ -37,6 +38,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'is_admin' => 'boolean',
+            'verified' => 'boolean',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
         ];

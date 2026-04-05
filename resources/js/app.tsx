@@ -15,6 +15,8 @@ createInertiaApp({
                 return null;
             case name.startsWith('twibbon/'):
                 return null;
+            case name.startsWith('creator/'):
+                return null;
             case name.startsWith('auth/'):
                 return AuthLayout;
             case name.startsWith('settings/'):

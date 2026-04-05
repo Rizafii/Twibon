@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { ChevronDownIcon, Image, LayoutDashboard, LogOut, Upload, User } from 'lucide-react';
 import { useState } from 'react';
 import { UploadTwibbonDialog } from '@/components/upload-twibbon-dialog';
+import { VerifiedUserName } from '@/components/verified-user-name';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,6 +25,7 @@ type SharedProps = {
             name: string;
             email: string;
             is_admin?: boolean;
+            verified?: boolean;
             avatar?: string | null;
         } | null;
     };
@@ -77,9 +79,12 @@ export function TwibbonNavbar({ canRegister = true }: Props) {
                                     </Avatar>
 
                                     <div className="grid text-left leading-tight">
-                                        <span className="text-xs font-medium text-slate-900">
-                                            Hi, {auth.user.name}
-                                        </span>
+                                        <VerifiedUserName
+                                            name={`Hi, ${auth.user.name}`}
+                                            verified={auth.user.verified}
+                                            className="text-xs font-medium text-slate-900"
+                                            iconClassName="size-3"
+                                        />
                                         <span className="text-[11px] text-slate-500">
                                             {auth.user.email}
                                         </span>

@@ -1,6 +1,12 @@
 import { router, useForm, usePage } from '@inertiajs/react';
-import { UploadIcon } from 'lucide-react';
-import { useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { CheckCircle2Icon, UploadIcon } from 'lucide-react';
+import {
+    useRef,
+    useState,
+    type CSSProperties,
+    type FormEvent,
+    type ReactNode,
+} from 'react';
 import { login } from '@/routes';
 import { Button } from '@/components/ui/button';
 import {
@@ -35,8 +41,42 @@ type Props = {
     onOpenChange?: (open: boolean) => void;
 };
 
+type ConfettiPiece = {
+    left: string;
+    size: number;
+    color: string;
+    delay: number;
+    duration: number;
+    drift: number;
+    rotate: number;
+};
+
+type ConfettiStyle = CSSProperties & {
+    '--upload-confetti-x': string;
+    '--upload-confetti-rotate': string;
+};
+
+const CONFETTI_PIECES: ConfettiPiece[] = Array.from(
+    { length: 22 },
+    (_, index) => {
+        const direction = index % 2 === 0 ? 1 : -1;
+
+        return {
+            left: `${((index * 19 + 7) % 100).toString()}%`,
+            size: 6 + (index % 4) * 2,
+            color: `hsl(${(index * 26 + 30) % 360} 90% 58%)`,
+            delay: (index % 6) * 0.06,
+            duration: 0.9 + (index % 5) * 0.12,
+            drift: direction * (14 + (index % 5) * 6),
+            rotate: direction * (180 + index * 18),
+        };
+    },
+);
+
 export function UploadTwibbonDialog({ children, open, onOpenChange }: Props) {
     const [internalOpen, setInternalOpen] = useState(false);
+    const [successOpen, setSuccessOpen] = useState(false);
+    const [successBurstKey, setSuccessBurstKey] = useState(0);
     const fileRef = useRef<HTMLInputElement | null>(null);
     const { auth } = usePage<SharedProps>().props;
     const { data, setData, post, processing, errors, reset, clearErrors } =
@@ -83,6 +123,8 @@ export function UploadTwibbonDialog({ children, open, onOpenChange }: Props) {
             onSuccess: () => {
                 setDialogOpen(false);
                 resetForm();
+                setSuccessBurstKey((current) => current + 1);
+                setSuccessOpen(true);
             },
         });
     };
@@ -185,6 +227,71 @@ export function UploadTwibbonDialog({ children, open, onOpenChange }: Props) {
                     </form>
                 </DialogContent>
             </Dialog>
+
+            <Dialog open={successOpen} onOpenChange={setSuccessOpen}>
+                <DialogContent className="overflow-hidden sm:max-w-md">
+                    <div
+                        key={successBurstKey}
+                        className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+                    >
+                        {CONFETTI_PIECES.map((piece, index) => {
+                            const confettiStyle: ConfettiStyle = {
+                                left: piece.left,
+                                top: '-12px',
+                                width: `${piece.size}px`,
+                                height: `${Math.max(4, Math.round(piece.size * 0.55))}px`,
+                                backgroundColor: piece.color,
+                                animation: `upload-confetti-fall ${piece.duration}s cubic-bezier(0.18, 0.82, 0.32, 1) ${piece.delay}s forwards`,
+                                '--upload-confetti-x': `${piece.drift}px`,
+                                '--upload-confetti-rotate': `${piece.rotate}deg`,
+                            };
+
+                            return (
+                                <span
+                                    key={`${piece.left}-${index.toString()}`}
+                                    className="absolute rounded-sm opacity-0"
+                                    style={confettiStyle}
+                                />
+                            );
+                        })}
+                    </div>
+
+                    <DialogHeader className="relative z-10 text-center sm:text-center">
+                        <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-700">
+                            <CheckCircle2Icon className="size-8" />
+                        </div>
+                        <DialogTitle className="text-xl">
+                            Twibbon Berhasil Diupload
+                        </DialogTitle>
+                        <DialogDescription>
+                            Upload berhasil. Tunggu admin sampai menyetujui
+                            twibbon kamu ya.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <DialogFooter className="relative z-10 sm:justify-center">
+                        <Button type="button" onClick={() => setSuccessOpen(false)}>
+                            Oke, Mengerti
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <style>{`
+                @keyframes upload-confetti-fall {
+                    0% {
+                        opacity: 0;
+                        transform: translate3d(0, -20px, 0) rotate(0deg) scale(0.84);
+                    }
+                    14% {
+                        opacity: 1;
+                    }
+                    100% {
+                        opacity: 0;
+                        transform: translate3d(var(--upload-confetti-x), 260px, 0) rotate(var(--upload-confetti-rotate)) scale(1);
+                    }
+                }
+            `}</style>
         </>
     );
 }

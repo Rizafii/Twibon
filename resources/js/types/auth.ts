@@ -8,6 +8,7 @@ export type User = {
     profile_photo_url?: string | null;
     banner_photo_url?: string | null;
     is_admin?: boolean;
+    verified?: boolean;
     avatar?: string;
     email_verified_at: string | null;
     two_factor_enabled?: boolean;

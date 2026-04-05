@@ -3,6 +3,7 @@ import { SearchIcon, SparklesIcon, User } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { TwibbonFooter } from '@/components/twibbon-footer';
 import { TwibbonNavbar } from '@/components/twibbon-navbar';
+import { VerifiedUserName } from '@/components/verified-user-name';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ type TwibbonItem = {
     slug: string;
     preview_url: string;
     creator_name: string;
+    creator_verified: boolean;
     uses_count: number;
 };
 
@@ -195,7 +197,16 @@ export default function TwibbonIndex({
                                                     </Avatar>
                                                     <div className="min-w-0 leading-tight">
                                                         <p className="truncate text-[11px] font-medium text-slate-800">
-                                                            {twibbon.creator_name}
+                                                            <VerifiedUserName
+                                                                name={
+                                                                    twibbon.creator_name
+                                                                }
+                                                                verified={
+                                                                    twibbon.creator_verified
+                                                                }
+                                                                nameClassName="truncate"
+                                                                iconClassName="size-3"
+                                                            />
                                                         </p>
                                                         <p className="text-[10px] text-slate-500">
                                                             Dibuat pada {formatCreatedAt(twibbon.created_at)}

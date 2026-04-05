@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\TwiboneUsed;
 use App\Models\Twibone;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
@@ -77,10 +78,11 @@ test('authenticated user can view my twibbon analytics page', function () {
     $this->actingAs($user)
         ->get('/my-twibbon')
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('twibbon/my')
-            ->where('stats.total_twibbons', 1)
-            ->where('twibbons.data.0.slug', $myTwibbon->url),
+        ->assertInertia(
+            fn(Assert $page) => $page
+                ->component('twibbon/my')
+                ->where('stats.total_twibbons', 1)
+                ->where('twibbons.data.0.slug', $myTwibbon->url),
         );
 });
 
@@ -99,9 +101,10 @@ test('owner can open edit page and update own twibbon', function () {
     $this->actingAs($user)
         ->get("/my-twibbon/{$twibone->id}/edit")
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('twibbon/edit')
-            ->where('twibbon.id', $twibone->id),
+        ->assertInertia(
+            fn(Assert $page) => $page
+                ->component('twibbon/edit')
+                ->where('twibbon.id', $twibone->id),
         );
 
     $this->actingAs($user)
@@ -228,11 +231,114 @@ test('upload is rate limited per user', function () {
     ]);
 });
 
+test('guest can view creator detail with latest sorting and approved twibbons only', function () {
+    $creator = User::factory()->create([
+        'bio' => 'Creator bio profile',
+        'verified' => true,
+    ]);
+
+    $oldApproved = Twibone::query()->create([
+        'name' => 'Old Approved',
+        'description' => 'Old approved twibbon.',
+        'path' => 'twibbons/frames/old-approved.png',
+        'url' => 'old-approved',
+        'users_uid' => $creator->id,
+        'is_approved' => true,
+        'created_at' => now()->subDays(3),
+        'updated_at' => now()->subDays(3),
+    ]);
+
+    $latestApproved = Twibone::query()->create([
+        'name' => 'Latest Approved',
+        'description' => 'Latest approved twibbon.',
+        'path' => 'twibbons/frames/latest-approved.png',
+        'url' => 'latest-approved',
+        'users_uid' => $creator->id,
+        'is_approved' => true,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    Twibone::query()->create([
+        'name' => 'Pending Hidden',
+        'description' => 'Pending twibbon should be hidden.',
+        'path' => 'twibbons/frames/pending-hidden.png',
+        'url' => 'pending-hidden',
+        'users_uid' => $creator->id,
+        'is_approved' => false,
+    ]);
+
+    $this->get("/creator/{$creator->id}")
+        ->assertOk()
+        ->assertInertia(
+            fn(Assert $page) => $page
+                ->component('creator/show')
+                ->where('filters.sort', 'latest')
+                ->where('creator.id', $creator->id)
+                ->where('creator.stats.total_twibbons', 2)
+                ->where('twibbons.data.0.id', $latestApproved->id)
+                ->where('twibbons.data.1.id', $oldApproved->id)
+                ->where('twibbons.data', fn($rows): bool => collect($rows)
+                    ->every(fn(array $row): bool => $row['slug'] !== 'pending-hidden')),
+        );
+});
+
+test('creator detail can be sorted by most popular', function () {
+    $creator = User::factory()->create();
+
+    $lessPopular = Twibone::query()->create([
+        'name' => 'Less Popular',
+        'description' => 'Lower usage twibbon.',
+        'path' => 'twibbons/frames/less-popular.png',
+        'url' => 'less-popular',
+        'users_uid' => $creator->id,
+        'is_approved' => true,
+    ]);
+
+    $mostPopular = Twibone::query()->create([
+        'name' => 'Most Popular',
+        'description' => 'Highest usage twibbon.',
+        'path' => 'twibbons/frames/most-popular.png',
+        'url' => 'most-popular',
+        'users_uid' => $creator->id,
+        'is_approved' => true,
+    ]);
+
+    TwiboneUsed::query()->create([
+        'twibone_uid' => $lessPopular->id,
+    ]);
+
+    foreach (range(1, 4) as $attempt) {
+        TwiboneUsed::query()->create([
+            'twibone_uid' => $mostPopular->id,
+            'ip_address' => "10.0.0.{$attempt}",
+        ]);
+    }
+
+    $this->get("/creator/{$creator->id}?sort=popular")
+        ->assertOk()
+        ->assertInertia(
+            fn(Assert $page) => $page
+                ->component('creator/show')
+                ->where('filters.sort', 'popular')
+                ->where('twibbons.data.0.id', $mostPopular->id)
+                ->where('twibbons.data.1.id', $lessPopular->id),
+        );
+});
+
 test('non admin cannot access admin twibbon panel', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-    ->get('/dashboard/twibbon')
+        ->get('/dashboard/twibbon')
+        ->assertForbidden();
+});
+
+test('non admin cannot access admin user management panel', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get('/dashboard/users')
         ->assertForbidden();
 });
 
@@ -259,5 +365,49 @@ test('admin can approve twibbon submission', function () {
     $this->assertDatabaseHas('twibone', [
         'id' => $twibone->id,
         'is_approved' => true,
+    ]);
+});
+
+test('admin can update user role and verified status', function () {
+    $admin = User::factory()->create([
+        'is_admin' => true,
+    ]);
+
+    $member = User::factory()->create([
+        'is_admin' => false,
+        'verified' => false,
+    ]);
+
+    $this->actingAs($admin)
+        ->patch("/dashboard/users/{$member->id}", [
+            'is_admin' => true,
+            'verified' => true,
+        ])
+        ->assertRedirect();
+
+    $this->assertDatabaseHas('users', [
+        'id' => $member->id,
+        'is_admin' => true,
+        'verified' => true,
+    ]);
+});
+
+test('admin cannot demote their own account', function () {
+    $admin = User::factory()->create([
+        'is_admin' => true,
+        'verified' => true,
+    ]);
+
+    $this->actingAs($admin)
+        ->patch("/dashboard/users/{$admin->id}", [
+            'is_admin' => false,
+            'verified' => true,
+        ])
+        ->assertRedirect()
+        ->assertSessionHas('error');
+
+    $this->assertDatabaseHas('users', [
+        'id' => $admin->id,
+        'is_admin' => true,
     ]);
 });

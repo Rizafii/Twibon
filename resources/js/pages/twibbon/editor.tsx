@@ -1,11 +1,12 @@
-import { Head, Link } from '@inertiajs/react';
-import { DownloadIcon, ImagePlusIcon } from 'lucide-react';
-import type { ChangeEvent, PointerEvent } from 'react';
-import {
-    useEffect,
-    useRef,
-    useState,
+import { Head } from '@inertiajs/react';
+import { DownloadIcon, ImagePlusIcon, Share2Icon } from 'lucide-react';
+import type {
+    ChangeEvent,
+    CSSProperties,
+    PointerEvent,
+    WheelEvent,
 } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { TwibbonFooter } from '@/components/twibbon-footer';
 import { TwibbonNavbar } from '@/components/twibbon-navbar';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,14 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
@@ -33,6 +42,38 @@ type Props = {
 const TWIBBON_RATIO = 3 / 4;
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 3;
+
+type ConfettiPiece = {
+    left: string;
+    size: number;
+    hue: number;
+    delay: number;
+    duration: number;
+    drift: number;
+    rotate: number;
+};
+
+type ConfettiStyle = CSSProperties & {
+    '--confetti-x': string;
+    '--confetti-rotate': string;
+};
+
+const CONFETTI_PIECES: ConfettiPiece[] = Array.from(
+    { length: 26 },
+    (_, index) => {
+        const direction = index % 2 === 0 ? 1 : -1;
+
+        return {
+            left: `${((index * 17 + 11) % 100).toString()}%`,
+            size: 6 + (index % 4) * 2,
+            hue: (index * 29 + 35) % 360,
+            delay: (index % 7) * 0.05,
+            duration: 0.9 + (index % 5) * 0.14,
+            drift: direction * (16 + (index % 6) * 8),
+            rotate: direction * (180 + index * 20),
+        };
+    },
+);
 
 type Offset = {
     x: number;
@@ -70,6 +111,23 @@ export default function TwibbonEditor({ twibbon }: Props) {
         lastX: 0,
         lastY: 0,
     });
+    const pointersRef = useRef<Map<number, Offset>>(new Map());
+    const pinchRef = useRef<{
+        active: boolean;
+        distance: number;
+        center: Offset;
+    }>({
+        active: false,
+        distance: 0,
+        center: { x: 0, y: 0 },
+    });
+    const interactionRef = useRef<{
+        zoom: number;
+        offset: Offset;
+    }>({
+        zoom: MIN_ZOOM,
+        offset: { x: 0, y: 0 },
+    });
 
     const [photoUrl, setPhotoUrl] = useState<string | null>(null);
     const [frameImage, setFrameImage] = useState<HTMLImageElement | null>(null);
@@ -79,7 +137,12 @@ export default function TwibbonEditor({ twibbon }: Props) {
     const [isDragging, setIsDragging] = useState(false);
     const [isRendering, setIsRendering] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
+    const [isSharing, setIsSharing] = useState(false);
     const [canvasReady, setCanvasReady] = useState(false);
+    const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const [shareFeedback, setShareFeedback] = useState<string | null>(null);
+    const [confettiBurstKey, setConfettiBurstKey] = useState(0);
     const [frameError, setFrameError] = useState<string | null>(null);
     const [editorError, setEditorError] = useState<string | null>(null);
 
@@ -109,28 +172,119 @@ export default function TwibbonEditor({ twibbon }: Props) {
 
     const bounds = getBoundsForZoom(zoom);
 
-    const maxOffsetX = bounds?.maxOffsetX ?? 0;
-    const maxOffsetY = bounds?.maxOffsetY ?? 0;
+    const clampOffsetToBounds = (
+        nextOffset: Offset,
+        nextBounds: CanvasBounds | null,
+    ): Offset => {
+        if (!nextBounds) {
+            return nextOffset;
+        }
 
-    const syncOffsetToBounds = (nextZoom: number) => {
-        setOffset((current) => {
-            const nextBounds = getBoundsForZoom(nextZoom);
+        return {
+            x: clamp(
+                nextOffset.x,
+                -nextBounds.maxOffsetX,
+                nextBounds.maxOffsetX,
+            ),
+            y: clamp(
+                nextOffset.y,
+                -nextBounds.maxOffsetY,
+                nextBounds.maxOffsetY,
+            ),
+        };
+    };
 
-            if (!nextBounds) {
-                return current;
-            }
+    const getCanvasPointFromClient = (
+        clientX: number,
+        clientY: number,
+    ): Offset | null => {
+        const canvas = canvasRef.current;
 
-            return {
-                x: clamp(current.x, -nextBounds.maxOffsetX, nextBounds.maxOffsetX),
-                y: clamp(current.y, -nextBounds.maxOffsetY, nextBounds.maxOffsetY),
-            };
-        });
+        if (!canvas) {
+            return null;
+        }
+
+        const rect = canvas.getBoundingClientRect();
+
+        if (rect.width <= 0 || rect.height <= 0) {
+            return null;
+        }
+
+        return {
+            x: (clientX - rect.left) * (canvas.width / rect.width),
+            y: (clientY - rect.top) * (canvas.height / rect.height),
+        };
+    };
+
+    const getPinchMetrics = (): { distance: number; center: Offset } | null => {
+        const points = [...pointersRef.current.values()];
+
+        if (points.length !== 2) {
+            return null;
+        }
+
+        const [firstPoint, secondPoint] = points;
+        const deltaX = secondPoint.x - firstPoint.x;
+        const deltaY = secondPoint.y - firstPoint.y;
+
+        return {
+            distance: Math.hypot(deltaX, deltaY),
+            center: {
+                x: (firstPoint.x + secondPoint.x) / 2,
+                y: (firstPoint.y + secondPoint.y) / 2,
+            },
+        };
+    };
+
+    const getOffsetForZoomAtPoint = (
+        fromZoom: number,
+        toZoom: number,
+        fromOffset: Offset,
+        anchor: Offset,
+    ): Offset => {
+        const canvas = canvasRef.current;
+        const fromBounds = getBoundsForZoom(fromZoom);
+        const toBounds = getBoundsForZoom(toZoom);
+
+        if (!canvas || !fromBounds || !toBounds) {
+            return fromOffset;
+        }
+
+        const fromDrawX =
+            (canvas.width - fromBounds.drawWidth) / 2 + fromOffset.x;
+        const fromDrawY =
+            (canvas.height - fromBounds.drawHeight) / 2 + fromOffset.y;
+
+        const relativeX = (anchor.x - fromDrawX) / fromBounds.drawWidth;
+        const relativeY = (anchor.y - fromDrawY) / fromBounds.drawHeight;
+
+        return clampOffsetToBounds(
+            {
+                x:
+                    anchor.x -
+                    (canvas.width - toBounds.drawWidth) / 2 -
+                    relativeX * toBounds.drawWidth,
+                y:
+                    anchor.y -
+                    (canvas.height - toBounds.drawHeight) / 2 -
+                    relativeY * toBounds.drawHeight,
+            },
+            toBounds,
+        );
     };
 
     const resetEditorPosition = () => {
+        interactionRef.current = {
+            zoom: MIN_ZOOM,
+            offset: { x: 0, y: 0 },
+        };
         setZoom(MIN_ZOOM);
         setOffset({ x: 0, y: 0 });
     };
+
+    useEffect(() => {
+        interactionRef.current = { zoom, offset };
+    }, [zoom, offset]);
 
     useEffect(() => {
         return () => {
@@ -156,7 +310,9 @@ export default function TwibbonEditor({ twibbon }: Props) {
                 const frameRatio = nextFrameImage.width / nextFrameImage.height;
 
                 if (Math.abs(frameRatio - TWIBBON_RATIO) > 0.01) {
-                    setFrameError('Frame twibbon tidak valid. Rasio wajib 3:4.');
+                    setFrameError(
+                        'Frame twibbon tidak valid. Rasio wajib 3:4.',
+                    );
                     setFrameImage(null);
                     setCanvasReady(false);
 
@@ -175,7 +331,9 @@ export default function TwibbonEditor({ twibbon }: Props) {
                 setFrameError(null);
                 setFrameImage(nextFrameImage);
             } catch {
-                setFrameError('Gagal memuat frame twibbon. Coba refresh halaman.');
+                setFrameError(
+                    'Gagal memuat frame twibbon. Coba refresh halaman.',
+                );
                 setFrameImage(null);
                 setCanvasReady(false);
             } finally {
@@ -197,6 +355,15 @@ export default function TwibbonEditor({ twibbon }: Props) {
             setCanvasReady(false);
             setUserImage(null);
             setEditorError(null);
+            pointersRef.current.clear();
+            pinchRef.current.active = false;
+            dragRef.current.active = false;
+            dragRef.current.pointerId = null;
+            setIsDragging(false);
+            interactionRef.current = {
+                zoom: MIN_ZOOM,
+                offset: { x: 0, y: 0 },
+            };
             setZoom(MIN_ZOOM);
             setOffset({ x: 0, y: 0 });
 
@@ -217,6 +384,10 @@ export default function TwibbonEditor({ twibbon }: Props) {
                 }
 
                 setUserImage(nextUserImage);
+                interactionRef.current = {
+                    zoom: MIN_ZOOM,
+                    offset: { x: 0, y: 0 },
+                };
                 setZoom(MIN_ZOOM);
                 setOffset({ x: 0, y: 0 });
             } catch {
@@ -256,14 +427,27 @@ export default function TwibbonEditor({ twibbon }: Props) {
             return;
         }
 
-        const clampedOffsetX = clamp(offset.x, -bounds.maxOffsetX, bounds.maxOffsetX);
-        const clampedOffsetY = clamp(offset.y, -bounds.maxOffsetY, bounds.maxOffsetY);
+        const clampedOffsetX = clamp(
+            offset.x,
+            -bounds.maxOffsetX,
+            bounds.maxOffsetX,
+        );
+        const clampedOffsetY = clamp(
+            offset.y,
+            -bounds.maxOffsetY,
+            bounds.maxOffsetY,
+        );
 
         if (
-            Math.abs(clampedOffsetX - offset.x) > 0.1
-            || Math.abs(clampedOffsetY - offset.y) > 0.1
+            Math.abs(clampedOffsetX - offset.x) > 0.1 ||
+            Math.abs(clampedOffsetY - offset.y) > 0.1
         ) {
-            setOffset({ x: clampedOffsetX, y: clampedOffsetY });
+            const clampedOffset = { x: clampedOffsetX, y: clampedOffsetY };
+            interactionRef.current = {
+                ...interactionRef.current,
+                offset: clampedOffset,
+            };
+            setOffset(clampedOffset);
 
             return;
         }
@@ -273,7 +457,13 @@ export default function TwibbonEditor({ twibbon }: Props) {
         const drawX = (canvas.width - bounds.drawWidth) / 2 + clampedOffsetX;
         const drawY = (canvas.height - bounds.drawHeight) / 2 + clampedOffsetY;
 
-        context.drawImage(userImage, drawX, drawY, bounds.drawWidth, bounds.drawHeight);
+        context.drawImage(
+            userImage,
+            drawX,
+            drawY,
+            bounds.drawWidth,
+            bounds.drawHeight,
+        );
         context.drawImage(frameImage, 0, 0, canvas.width, canvas.height);
 
         setCanvasReady(true);
@@ -298,6 +488,8 @@ export default function TwibbonEditor({ twibbon }: Props) {
 
         dragRef.current.active = false;
         dragRef.current.pointerId = null;
+        pointersRef.current.clear();
+        pinchRef.current.active = false;
         setIsDragging(false);
 
         setPhotoUrl((current) => {
@@ -309,95 +501,298 @@ export default function TwibbonEditor({ twibbon }: Props) {
         });
     };
 
-    const handleZoomChange = (event: ChangeEvent<HTMLInputElement>) => {
-        const nextZoom = Number(event.target.value);
-
-        setZoom(nextZoom);
-        syncOffsetToBounds(nextZoom);
-    };
-
-    const handleOffsetXChange = (event: ChangeEvent<HTMLInputElement>) => {
-        const nextOffsetX = Number(event.target.value);
-
-        setOffset((current) => ({
-            ...current,
-            x: clamp(nextOffsetX, -maxOffsetX, maxOffsetX),
-        }));
-    };
-
-    const handleOffsetYChange = (event: ChangeEvent<HTMLInputElement>) => {
-        const nextOffsetY = Number(event.target.value);
-
-        setOffset((current) => ({
-            ...current,
-            y: clamp(nextOffsetY, -maxOffsetY, maxOffsetY),
-        }));
-    };
-
     const stopDragging = () => {
         dragRef.current.active = false;
         dragRef.current.pointerId = null;
         setIsDragging(false);
     };
 
-    const handleCanvasPointerDown = (event: PointerEvent<HTMLCanvasElement>) => {
+    const handleCanvasPointerDown = (
+        event: PointerEvent<HTMLCanvasElement>,
+    ) => {
+        if (!userImage) {
+            return;
+        }
+
+        const point = getCanvasPointFromClient(event.clientX, event.clientY);
+
+        if (!point) {
+            return;
+        }
+
+        pointersRef.current.set(event.pointerId, point);
+        event.currentTarget.setPointerCapture(event.pointerId);
+
+        if (pointersRef.current.size >= 2) {
+            stopDragging();
+
+            const pinchMetrics = getPinchMetrics();
+
+            if (!pinchMetrics || pinchMetrics.distance <= 0) {
+                return;
+            }
+
+            pinchRef.current.active = true;
+            pinchRef.current.distance = pinchMetrics.distance;
+            pinchRef.current.center = pinchMetrics.center;
+
+            return;
+        }
+
+        pinchRef.current.active = false;
+        dragRef.current.active = true;
+        dragRef.current.pointerId = event.pointerId;
+        dragRef.current.lastX = point.x;
+        dragRef.current.lastY = point.y;
+        setIsDragging(true);
+    };
+
+    const handleCanvasPointerMove = (
+        event: PointerEvent<HTMLCanvasElement>,
+    ) => {
+        if (!pointersRef.current.has(event.pointerId) || !userImage) {
+            return;
+        }
+
+        const point = getCanvasPointFromClient(event.clientX, event.clientY);
+
+        if (!point) {
+            return;
+        }
+
+        pointersRef.current.set(event.pointerId, point);
+
+        if (pinchRef.current.active && pointersRef.current.size >= 2) {
+            const pinchMetrics = getPinchMetrics();
+
+            if (!pinchMetrics || pinchMetrics.distance <= 0) {
+                return;
+            }
+
+            const currentZoom = interactionRef.current.zoom;
+            const zoomRatio = pinchMetrics.distance / pinchRef.current.distance;
+            const nextZoom = clamp(currentZoom * zoomRatio, MIN_ZOOM, MAX_ZOOM);
+
+            let nextOffset = interactionRef.current.offset;
+
+            if (Math.abs(nextZoom - currentZoom) > 0.0001) {
+                nextOffset = getOffsetForZoomAtPoint(
+                    currentZoom,
+                    nextZoom,
+                    nextOffset,
+                    pinchMetrics.center,
+                );
+            }
+
+            const nextBounds = getBoundsForZoom(nextZoom);
+            nextOffset = clampOffsetToBounds(
+                {
+                    x:
+                        nextOffset.x +
+                        (pinchMetrics.center.x - pinchRef.current.center.x),
+                    y:
+                        nextOffset.y +
+                        (pinchMetrics.center.y - pinchRef.current.center.y),
+                },
+                nextBounds,
+            );
+
+            interactionRef.current = {
+                zoom: nextZoom,
+                offset: nextOffset,
+            };
+            setZoom(nextZoom);
+            setOffset(nextOffset);
+
+            pinchRef.current.distance = pinchMetrics.distance;
+            pinchRef.current.center = pinchMetrics.center;
+
+            return;
+        }
+
+        if (
+            !dragRef.current.active ||
+            dragRef.current.pointerId !== event.pointerId
+        ) {
+            return;
+        }
+
+        const currentZoom = interactionRef.current.zoom;
+        const currentBounds = getBoundsForZoom(currentZoom);
+
+        if (!currentBounds) {
+            return;
+        }
+
+        const deltaX = point.x - dragRef.current.lastX;
+        const deltaY = point.y - dragRef.current.lastY;
+
+        dragRef.current.lastX = point.x;
+        dragRef.current.lastY = point.y;
+
+        const nextOffset = clampOffsetToBounds(
+            {
+                x: interactionRef.current.offset.x + deltaX,
+                y: interactionRef.current.offset.y + deltaY,
+            },
+            currentBounds,
+        );
+
+        interactionRef.current = {
+            ...interactionRef.current,
+            offset: nextOffset,
+        };
+        setOffset(nextOffset);
+    };
+
+    const handleCanvasWheel = (event: WheelEvent<HTMLCanvasElement>) => {
         if (!userImage || !bounds) {
             return;
         }
 
-        dragRef.current.active = true;
-        dragRef.current.pointerId = event.pointerId;
-        dragRef.current.lastX = event.clientX;
-        dragRef.current.lastY = event.clientY;
-        event.currentTarget.setPointerCapture(event.pointerId);
-        setIsDragging(true);
-    };
+        event.preventDefault();
 
-    const handleCanvasPointerMove = (event: PointerEvent<HTMLCanvasElement>) => {
-        if (!dragRef.current.active || dragRef.current.pointerId !== event.pointerId || !bounds) {
+        const anchor = getCanvasPointFromClient(event.clientX, event.clientY);
+
+        if (!anchor) {
             return;
         }
 
-        const canvas = canvasRef.current;
+        const currentZoom = interactionRef.current.zoom;
+        const sensitivity = event.ctrlKey ? 0.004 : 0.002;
+        const nextZoom = clamp(
+            currentZoom - event.deltaY * sensitivity,
+            MIN_ZOOM,
+            MAX_ZOOM,
+        );
 
-        if (!canvas) {
+        if (Math.abs(nextZoom - currentZoom) < 0.0001) {
             return;
         }
 
-        const rect = canvas.getBoundingClientRect();
+        const nextOffset = getOffsetForZoomAtPoint(
+            currentZoom,
+            nextZoom,
+            interactionRef.current.offset,
+            anchor,
+        );
 
-        if (rect.width <= 0 || rect.height <= 0) {
-            return;
-        }
-
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-
-        const deltaX = (event.clientX - dragRef.current.lastX) * scaleX;
-        const deltaY = (event.clientY - dragRef.current.lastY) * scaleY;
-
-        dragRef.current.lastX = event.clientX;
-        dragRef.current.lastY = event.clientY;
-
-        setOffset((current) => ({
-            x: clamp(current.x + deltaX, -bounds.maxOffsetX, bounds.maxOffsetX),
-            y: clamp(current.y + deltaY, -bounds.maxOffsetY, bounds.maxOffsetY),
-        }));
+        interactionRef.current = {
+            zoom: nextZoom,
+            offset: nextOffset,
+        };
+        setZoom(nextZoom);
+        setOffset(nextOffset);
     };
 
     const handleCanvasPointerUp = (event: PointerEvent<HTMLCanvasElement>) => {
-        if (dragRef.current.pointerId !== null) {
-            try {
-                event.currentTarget.releasePointerCapture(dragRef.current.pointerId);
-            } catch {
-                // Ignore capture release errors when pointer capture is already gone.
-            }
+        try {
+            event.currentTarget.releasePointerCapture(event.pointerId);
+        } catch {
+            // Ignore capture release errors when pointer capture is already gone.
         }
+
+        pointersRef.current.delete(event.pointerId);
+
+        if (pointersRef.current.size < 2) {
+            pinchRef.current.active = false;
+        }
+
+        if (pointersRef.current.size === 1) {
+            const [remainingPointerId, remainingPoint] = [
+                ...pointersRef.current.entries(),
+            ][0];
+
+            dragRef.current.active = true;
+            dragRef.current.pointerId = remainingPointerId;
+            dragRef.current.lastX = remainingPoint.x;
+            dragRef.current.lastY = remainingPoint.y;
+            setIsDragging(true);
+
+            return;
+        }
+
+        pointersRef.current.clear();
 
         stopDragging();
     };
 
     const activeError = frameError ?? editorError;
+
+    const downloadImageDataUrl = (dataUrl: string) => {
+        const downloadLink = document.createElement('a');
+        downloadLink.href = dataUrl;
+        downloadLink.download = `${twibbon.slug}-result.png`;
+        downloadLink.click();
+    };
+
+    const handleDownloadFromPreview = () => {
+        if (!previewImageUrl) {
+            return;
+        }
+
+        downloadImageDataUrl(previewImageUrl);
+    };
+
+    const handleSharePreview = async () => {
+        if (!previewImageUrl) {
+            return;
+        }
+
+        setIsSharing(true);
+        setShareFeedback(null);
+
+        try {
+            if (navigator.share) {
+                const previewResponse = await fetch(previewImageUrl);
+                const previewBlob = await previewResponse.blob();
+                const previewFile = new File(
+                    [previewBlob],
+                    `${twibbon.slug}-result.png`,
+                    { type: 'image/png' },
+                );
+
+                const canShareFiles =
+                    typeof navigator.canShare === 'function' &&
+                    navigator.canShare({ files: [previewFile] });
+
+                if (canShareFiles) {
+                    await navigator.share({
+                        title: `Hasil ${twibbon.name}`,
+                        text: 'Lihat hasil twibbon saya',
+                        files: [previewFile],
+                    });
+
+                    setShareFeedback('Berhasil membuka panel bagikan.');
+
+                    return;
+                }
+
+                await navigator.share({
+                    title: `Hasil ${twibbon.name}`,
+                    text: 'Lihat hasil twibbon saya',
+                    url: window.location.href,
+                });
+
+                setShareFeedback('Berhasil membuka panel bagikan.');
+
+                return;
+            }
+
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(window.location.href);
+                setShareFeedback('Link halaman editor disalin.');
+
+                return;
+            }
+
+            setShareFeedback('Browser belum mendukung fitur bagikan otomatis.');
+        } catch {
+            setShareFeedback('Aksi bagikan dibatalkan atau gagal.');
+        } finally {
+            setIsSharing(false);
+        }
+    };
 
     const handleDownload = async () => {
         const canvas = canvasRef.current;
@@ -409,6 +804,7 @@ export default function TwibbonEditor({ twibbon }: Props) {
         setIsDownloading(true);
 
         try {
+            const resultImageUrl = canvas.toDataURL('image/png');
             const csrfToken = (
                 document.querySelector(
                     'meta[name="csrf-token"]',
@@ -426,10 +822,10 @@ export default function TwibbonEditor({ twibbon }: Props) {
                 body: JSON.stringify({}),
             });
 
-            const downloadLink = document.createElement('a');
-            downloadLink.href = canvas.toDataURL('image/png');
-            downloadLink.download = `${twibbon.slug}-result.png`;
-            downloadLink.click();
+            setPreviewImageUrl(resultImageUrl);
+            setShareFeedback(null);
+            setConfettiBurstKey((current) => current + 1);
+            setPreviewOpen(true);
         } finally {
             setIsDownloading(false);
         }
@@ -443,24 +839,25 @@ export default function TwibbonEditor({ twibbon }: Props) {
                 <div className="mx-auto max-w-375 space-y-6">
                     <TwibbonNavbar />
 
-                    <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
+                    <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1.2fr_1.8fr]">
                         <Card>
                             <CardHeader>
                                 <CardTitle>Preview Hasil</CardTitle>
                                 <CardDescription>
-                                    Upload foto, lalu atur zoom dan posisi langsung
-                                    di canvas.
+                                    Upload foto, lalu atur zoom dan posisi
+                                    langsung di canvas.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <div className="relative overflow-hidden rounded-xl border bg-slate-100 p-3">
+                                <div className="relative overflow-hidden rounded-xl border bg-slate-100">
                                     <canvas
                                         ref={canvasRef}
                                         onPointerDown={handleCanvasPointerDown}
                                         onPointerMove={handleCanvasPointerMove}
                                         onPointerUp={handleCanvasPointerUp}
                                         onPointerCancel={handleCanvasPointerUp}
-                                        className={`mx-auto w-full max-w-140 rounded-lg bg-white touch-none ${
+                                        onWheel={handleCanvasWheel}
+                                        className={`mx-auto w-full max-w-140 touch-none rounded-lg bg-white ${
                                             userImage
                                                 ? isDragging
                                                     ? 'cursor-grabbing'
@@ -476,8 +873,8 @@ export default function TwibbonEditor({ twibbon }: Props) {
                                                     Belum ada foto pengguna
                                                 </p>
                                                 <p className="text-sm text-slate-600">
-                                                    Pilih gambar terlebih dahulu untuk
-                                                    memulai editor.
+                                                    Pilih gambar terlebih dahulu
+                                                    untuk memulai editor.
                                                 </p>
                                             </div>
                                         </div>
@@ -506,67 +903,6 @@ export default function TwibbonEditor({ twibbon }: Props) {
                                     />
                                 </div>
 
-                                <div className="grid gap-2">
-                                    <div className="flex items-center justify-between">
-                                        <Label htmlFor="zoom">Zoom Foto</Label>
-                                        <span className="text-xs text-slate-500">
-                                            {Math.round(zoom * 100)}%
-                                        </span>
-                                    </div>
-                                    <Input
-                                        id="zoom"
-                                        type="range"
-                                        min={MIN_ZOOM}
-                                        max={MAX_ZOOM}
-                                        step={0.01}
-                                        value={zoom}
-                                        onChange={handleZoomChange}
-                                        disabled={!userImage || !bounds}
-                                    />
-                                </div>
-
-                                <div className="grid gap-2">
-                                    <div className="flex items-center justify-between">
-                                        <Label htmlFor="positionX">
-                                            Geser Horizontal
-                                        </Label>
-                                        <span className="text-xs text-slate-500">
-                                            {Math.round(offset.x)}
-                                        </span>
-                                    </div>
-                                    <Input
-                                        id="positionX"
-                                        type="range"
-                                        min={-maxOffsetX}
-                                        max={maxOffsetX}
-                                        step={1}
-                                        value={offset.x}
-                                        onChange={handleOffsetXChange}
-                                        disabled={!userImage || maxOffsetX === 0}
-                                    />
-                                </div>
-
-                                <div className="grid gap-2">
-                                    <div className="flex items-center justify-between">
-                                        <Label htmlFor="positionY">
-                                            Geser Vertikal
-                                        </Label>
-                                        <span className="text-xs text-slate-500">
-                                            {Math.round(offset.y)}
-                                        </span>
-                                    </div>
-                                    <Input
-                                        id="positionY"
-                                        type="range"
-                                        min={-maxOffsetY}
-                                        max={maxOffsetY}
-                                        step={1}
-                                        value={offset.y}
-                                        onChange={handleOffsetYChange}
-                                        disabled={!userImage || maxOffsetY === 0}
-                                    />
-                                </div>
-
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -578,8 +914,10 @@ export default function TwibbonEditor({ twibbon }: Props) {
                                 </Button>
 
                                 <p className="text-xs text-slate-500">
-                                    Tip: kamu bisa drag langsung gambar di canvas
-                                    untuk atur posisi.
+                                    Tip: seret gambar langsung di frame untuk
+                                    geser posisi. Zoom bisa dengan cubit layar
+                                    sentuh atau scroll mouse/trackpad di
+                                    desktop.
                                 </p>
 
                                 {activeError && (
@@ -594,7 +932,12 @@ export default function TwibbonEditor({ twibbon }: Props) {
                                     type="button"
                                     size="lg"
                                     className="w-full"
-                                    disabled={!canvasReady || isRendering || isDownloading || !!frameError}
+                                    disabled={
+                                        !canvasReady ||
+                                        isRendering ||
+                                        isDownloading ||
+                                        !!frameError
+                                    }
                                     onClick={handleDownload}
                                 >
                                     {isRendering || isDownloading ? (
@@ -613,6 +956,112 @@ export default function TwibbonEditor({ twibbon }: Props) {
 
                 <TwibbonFooter />
             </div>
+
+            <Dialog
+                open={previewOpen}
+                onOpenChange={(open) => {
+                    setPreviewOpen(open);
+
+                    if (!open) {
+                        setShareFeedback(null);
+                    }
+                }}
+            >
+                <DialogContent className="overflow-hidden sm:max-w-xl">
+                    <div
+                        key={confettiBurstKey}
+                        className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+                    >
+                        {CONFETTI_PIECES.map((piece, index) => {
+                            const confettiStyle: ConfettiStyle = {
+                                left: piece.left,
+                                top: '-14px',
+                                width: `${piece.size}px`,
+                                height: `${Math.max(4, Math.round(piece.size * 0.55))}px`,
+                                backgroundColor: `hsl(${piece.hue} 90% 58%)`,
+                                animation: `editor-confetti-fall ${piece.duration}s cubic-bezier(0.16, 0.84, 0.32, 1) ${piece.delay}s forwards`,
+                                '--confetti-x': `${piece.drift}px`,
+                                '--confetti-rotate': `${piece.rotate}deg`,
+                            };
+
+                            return (
+                                <span
+                                    key={`${piece.left}-${index.toString()}`}
+                                    className="absolute rounded-sm opacity-0"
+                                    style={confettiStyle}
+                                />
+                            );
+                        })}
+                    </div>
+
+                    <DialogHeader className="relative z-10">
+                        <DialogTitle>Preview Hasil Twibbon</DialogTitle>
+                        <DialogDescription>
+                            Hasil siap diunduh atau dibagikan langsung.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="relative z-10 overflow-hidden rounded-xl border bg-slate-50 p-2">
+                        {previewImageUrl ? (
+                            <img
+                                src={previewImageUrl}
+                                alt={`Preview hasil ${twibbon.name}`}
+                                className="mx-auto max-h-[65vh] w-full rounded-lg object-contain"
+                            />
+                        ) : (
+                            <div className="grid h-72 place-items-center text-sm text-slate-500">
+                                Preview belum tersedia.
+                            </div>
+                        )}
+                    </div>
+
+                    {shareFeedback && (
+                        <p className="relative z-10 text-sm text-slate-600">
+                            {shareFeedback}
+                        </p>
+                    )}
+
+                    <DialogFooter className="relative z-10 sm:justify-between">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleDownloadFromPreview}
+                            disabled={!previewImageUrl}
+                        >
+                            <DownloadIcon className="size-4" />
+                            Download PNG
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={handleSharePreview}
+                            disabled={!previewImageUrl || isSharing}
+                        >
+                            {isSharing ? (
+                                <Spinner className="size-4" />
+                            ) : (
+                                <Share2Icon className="size-4" />
+                            )}
+                            Bagikan
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <style>{`
+                @keyframes editor-confetti-fall {
+                    0% {
+                        opacity: 0;
+                        transform: translate3d(0, -24px, 0) rotate(0deg) scale(0.8);
+                    }
+                    14% {
+                        opacity: 1;
+                    }
+                    100% {
+                        opacity: 0;
+                        transform: translate3d(var(--confetti-x), 320px, 0) rotate(var(--confetti-rotate)) scale(1);
+                    }
+                }
+            `}</style>
         </>
     );
 }

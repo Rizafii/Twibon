@@ -1,5 +1,5 @@
-import { Link } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid, PictureInPicture } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
+import { BookOpen, FolderGit2, LayoutGrid, PictureInPicture, Users } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -16,18 +16,13 @@ import {
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Daftar Twibbon',
-        href: '/dashboard/twibbon',
-        icon: PictureInPicture,
-    },
-];
+type SharedProps = {
+    auth: {
+        user?: {
+            is_admin?: boolean;
+        } | null;
+    };
+};
 
 const footerNavItems: NavItem[] = [
     {
@@ -43,6 +38,31 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
+    const { auth } = usePage<SharedProps>().props;
+
+    const mainNavItems: NavItem[] = [
+        {
+            title: 'Dashboard',
+            href: dashboard(),
+            icon: LayoutGrid,
+        },
+    ];
+
+    if (auth.user?.is_admin) {
+        mainNavItems.push(
+            {
+                title: 'Daftar Twibbon',
+                href: '/dashboard/twibbon',
+                icon: PictureInPicture,
+            },
+            {
+                title: 'User Management',
+                href: '/dashboard/users',
+                icon: Users,
+            },
+        );
+    }
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
