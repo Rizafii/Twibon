@@ -1,5 +1,12 @@
 import { Link, usePage } from '@inertiajs/react';
-import { ChevronDownIcon, Image, LayoutDashboard, LogOut, Upload, User } from 'lucide-react';
+import {
+    ChevronDownIcon,
+    Image,
+    LayoutDashboard,
+    LogOut,
+    Upload,
+    User,
+} from 'lucide-react';
 import { useState } from 'react';
 import { UploadTwibbonDialog } from '@/components/upload-twibbon-dialog';
 import { VerifiedUserName } from '@/components/verified-user-name';
@@ -47,9 +54,12 @@ export function TwibbonNavbar({ canRegister = true }: Props) {
         <header className="relative mb-8 flex flex-col gap-4 rounded-2xl border border-white/60 bg-white/80 p-5 shadow-sm backdrop-blur md:flex-row md:items-center md:justify-between">
             <Link
                 href={home()}
-                className="  tracking-tight"
+                className="flex items-center gap-2 tracking-tight"
             >
-                <p className='text-xl font-semibold text-slate-900'>Creative Six</p>
+                <img src="/favicon.svg" alt="Logo" className="h-10 w-10" />
+                <p className="text-xl font-semibold text-slate-900">
+                    Creative Six
+                </p>
             </Link>
 
             <Link
@@ -60,14 +70,11 @@ export function TwibbonNavbar({ canRegister = true }: Props) {
             </Link>
 
             <div className="flex flex-wrap items-center gap-4 md:ml-auto">
-
                 {auth.user ? (
                     <>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <div
-                                    className="inline-flex h-auto items-center gap-2 text-sm cursor-pointer"
-                                >
+                                <div className="inline-flex h-auto cursor-pointer items-center gap-2 text-sm">
                                     <Avatar className="h-6 w-6 overflow-hidden rounded-full">
                                         <AvatarImage
                                             src={auth.user.avatar ?? undefined}
@@ -97,25 +104,37 @@ export function TwibbonNavbar({ canRegister = true }: Props) {
                             <DropdownMenuContent align="end">
                                 {auth.user.is_admin && (
                                     <DropdownMenuItem asChild>
-                                        <Link href={dashboard()}><LayoutDashboard className='text-primary'/>Dashboard</Link>
+                                        <Link href={dashboard()}>
+                                            <LayoutDashboard className="text-primary" />
+                                            Dashboard
+                                        </Link>
                                     </DropdownMenuItem>
                                 )}
                                 <DropdownMenuItem asChild>
-                                    <Link href="/my-twibbon"><Image className='text-primary'/>Twibbon Saya</Link>
+                                    <Link href="/my-twibbon">
+                                        <Image className="text-primary" />
+                                        Twibbon Saya
+                                    </Link>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => setUploadDialogOpen(true)}>
-                                    <Upload className='text-primary' />
+                                <DropdownMenuItem
+                                    onSelect={() => setUploadDialogOpen(true)}
+                                >
+                                    <Upload className="text-primary" />
                                     Upload Twibbon
                                 </DropdownMenuItem>
                                 <DropdownMenuItem asChild>
-                                    <Link href={edit()}><User className='text-primary'/>Profile Settings</Link>
+                                    <Link href={edit()}>
+                                        <User className="text-primary" />
+                                        Profile Settings
+                                    </Link>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem asChild >
+                                <DropdownMenuItem asChild>
                                     <Link
                                         href={logout()}
-                                        className='text-red-600'
+                                        className="text-red-600"
                                     >
-                                        <LogOut className='text-red-600'/>Logout
+                                        <LogOut className="text-red-600" />
+                                        Logout
                                     </Link>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -127,7 +146,7 @@ export function TwibbonNavbar({ canRegister = true }: Props) {
                         />
                     </>
                 ) : (
-                    <div className='flex gap-4 items-center'>
+                    <div className="flex items-center gap-4">
                         <Button asChild variant="outline">
                             <Link href={login()}>Log in</Link>
                         </Button>
