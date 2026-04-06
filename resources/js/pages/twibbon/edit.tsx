@@ -23,6 +23,8 @@ type Props = {
         name: string;
         description: string;
         slug: string;
+        custom_url?: string | null;
+        public_url: string;
         preview_url: string;
         is_approved: boolean;
     };
@@ -31,12 +33,14 @@ type Props = {
 type EditForm = {
     name: string;
     description: string;
+    custom_url: string;
 };
 
 export default function TwibbonEdit({ twibbon }: Props) {
     const { data, setData, patch, processing, errors } = useForm<EditForm>({
         name: twibbon.name,
         description: twibbon.description,
+        custom_url: twibbon.custom_url ?? '',
     });
 
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -81,6 +85,11 @@ export default function TwibbonEdit({ twibbon }: Props) {
                                     <span className="text-xs text-slate-500">
                                         /twibbon/{twibbon.slug}
                                     </span>
+                                    {twibbon.custom_url ? (
+                                        <span className="text-xs text-slate-500">
+                                            /{twibbon.custom_url}
+                                        </span>
+                                    ) : null}
                                 </div>
                             </div>
 
@@ -91,7 +100,7 @@ export default function TwibbonEdit({ twibbon }: Props) {
                                         Edit Twibbon
                                     </CardTitle>
                                     <CardDescription>
-                                        Ubah nama dan deskripsi twibbon milikmu.
+                                        Ubah nama, deskripsi, dan custom URL twibbon milikmu.
                                     </CardDescription>
                                 </CardHeader>
 
@@ -129,6 +138,29 @@ export default function TwibbonEdit({ twibbon }: Props) {
                                             {errors.description && (
                                                 <p className="text-sm text-red-600">
                                                     {errors.description}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="custom_url">
+                                                Custom URL (opsional)
+                                            </Label>
+                                            <Input
+                                                id="custom_url"
+                                                value={data.custom_url}
+                                                onChange={(event) =>
+                                                    setData('custom_url', event.target.value)
+                                                }
+                                                placeholder="contoh: osis-smkn6"
+                                            />
+                                            <p className="text-xs text-slate-500">
+                                                URL publik: /
+                                                {data.custom_url || 'custom-url-kamu'}
+                                            </p>
+                                            {errors.custom_url && (
+                                                <p className="text-sm text-red-600">
+                                                    {errors.custom_url}
                                                 </p>
                                             )}
                                         </div>

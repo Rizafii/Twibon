@@ -23,6 +23,7 @@ type Props = {
         description: string;
         created_at: string | null;
         slug: string;
+        custom_url?: string | null;
         preview_url: string;
         creator_name: string;
         creator: {
@@ -122,7 +123,9 @@ export default function TwibbonShow({ twibbon }: Props) {
                                     <Badge className="max-w-full rounded-full px-3 py-1 text-xs">
                                         <Link2Icon className="size-3.5 shrink-0" />
                                         <span className="truncate">
-                                            /twibbon/{twibbon.slug}
+                                            {twibbon.custom_url
+                                                ? `/${twibbon.custom_url}`
+                                                : `/twibbon/${twibbon.slug}`}
                                         </span>
                                     </Badge>
                                 </div>

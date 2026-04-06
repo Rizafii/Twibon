@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Twibone;
+use App\Support\PublicPath;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -106,6 +107,10 @@ class TwibbonMineController extends Controller
                 'name' => $twibone->name,
                 'description' => $twibone->description,
                 'slug' => $twibone->url,
+                'custom_url' => $twibone->custom_url,
+                'public_url' => $twibone->custom_url
+                    ? url('/' . $twibone->custom_url)
+                    : url('/twibbon/' . $twibone->url),
                 'preview_url' => asset('storage/'.ltrim($twibone->path, '/')),
                 'is_approved' => $twibone->is_approved,
             ],
@@ -119,7 +124,33 @@ class TwibbonMineController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'description' => ['required', 'string', 'max:1200'],
+            'custom_url' => [
+                'nullable',
+                'string',
+                'min:3',
+                'max:60',
+                'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+                function (string $attribute, mixed $value, \Closure $fail) use ($twibone): void {
+                    if (! is_string($value) || trim($value) === '') {
+                        return;
+                    }
+
+                    $normalized = PublicPath::normalize($value);
+
+                    if ($normalized === null) {
+                        $fail('Custom URL tidak valid.');
+
+                        return;
+                    }
+
+                    if (! PublicPath::isAvailable($normalized, $twibone->id)) {
+                        $fail('Custom URL sudah dipakai atau termasuk rute sistem.');
+                    }
+                },
+            ],
         ]);
+
+        $customUrl = PublicPath::normalize((string) ($validated['custom_url'] ?? ''));
 
         $baseSlug = Str::slug($validated['name']);
         $baseSlug = $baseSlug === '' ? 'twibbon' : $baseSlug;
@@ -140,6 +171,7 @@ class TwibbonMineController extends Controller
             'name' => $validated['name'],
             'description' => $validated['description'],
             'url' => $slug,
+            'custom_url' => $customUrl,
         ]);
 
         return to_route('my-profile.show')->with('success', 'Twibbon berhasil diperbarui.');

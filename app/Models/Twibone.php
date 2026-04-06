@@ -16,6 +16,7 @@ class Twibone extends Model
         'description',
         'path',
         'url',
+        'custom_url',
         'users_uid',
         'is_approved',
     ];

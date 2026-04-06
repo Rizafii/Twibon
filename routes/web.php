@@ -4,6 +4,8 @@ use App\Http\Controllers\Admin\TwibbonApprovalController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\CreatorController;
 use App\Http\Controllers\MyProfileController;
+use App\Http\Controllers\MyProfileShortLinkController;
+use App\Http\Controllers\PublicPathResolverController;
 use App\Http\Controllers\TwibbonController;
 use App\Http\Controllers\TwibbonEditorController;
 use App\Http\Controllers\TwibbonMineController;
@@ -33,6 +35,10 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/my-profile/twibbon/{twibone}', [TwibbonMineController::class, 'update'])->name('my-profile.twibbon.update');
     Route::delete('/my-profile/twibbon/{twibone}', [TwibbonMineController::class, 'destroy'])->name('my-profile.twibbon.destroy');
 
+    Route::post('/my-profile/urls', [MyProfileShortLinkController::class, 'store'])->name('my-profile.urls.store');
+    Route::patch('/my-profile/urls/{shortLink}', [MyProfileShortLinkController::class, 'update'])->name('my-profile.urls.update');
+    Route::delete('/my-profile/urls/{shortLink}', [MyProfileShortLinkController::class, 'destroy'])->name('my-profile.urls.destroy');
+
     // Legacy routes kept for backward compatibility.
     Route::get('/my-twibbon/{twibone}/edit', [TwibbonMineController::class, 'edit'])->name('twibbon.mine.edit');
     Route::patch('/my-twibbon/{twibone}', [TwibbonMineController::class, 'update'])->name('twibbon.mine.update');
@@ -52,3 +58,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 require __DIR__ . '/settings.php';
+
+Route::fallback(PublicPathResolverController::class)->name('public-path.resolve');

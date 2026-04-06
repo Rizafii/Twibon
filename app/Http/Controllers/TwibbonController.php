@@ -118,13 +118,30 @@ class TwibbonController extends Controller
 
     public function show(string $slug): Response
     {
-        $twibbon = Twibone::query()
+        $twibbon = $this->findApprovedTwibbonBy('url', $slug);
+
+        return $this->renderShowPage($twibbon);
+    }
+
+    public function showByCustomPath(string $customPath): Response
+    {
+        $twibbon = $this->findApprovedTwibbonBy('custom_url', $customPath);
+
+        return $this->renderShowPage($twibbon);
+    }
+
+    private function findApprovedTwibbonBy(string $column, string $value): Twibone
+    {
+        return Twibone::query()
             ->with('creator:id,name,username,bio,profile_photo_path,banner_photo_path,verified')
             ->withCount('usages')
             ->where('is_approved', true)
-            ->where('url', $slug)
+            ->where($column, $value)
             ->firstOrFail();
+    }
 
+    private function renderShowPage(Twibone $twibbon): Response
+    {
         $creatorProfilePhotoUrl = $twibbon->creator?->profile_photo_path
             ? asset('storage/' . ltrim((string) $twibbon->creator->profile_photo_path, '/'))
             : null;
@@ -140,6 +157,7 @@ class TwibbonController extends Controller
                 'description' => $twibbon->description,
                 'created_at' => $twibbon->created_at?->toIso8601String(),
                 'slug' => $twibbon->url,
+                'custom_url' => $twibbon->custom_url,
                 'preview_url' => asset('storage/' . ltrim($twibbon->path, '/')),
                 'creator_name' => $twibbon->creator?->name ?? 'Unknown',
                 'creator' => [

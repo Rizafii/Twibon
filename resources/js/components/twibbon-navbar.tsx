@@ -4,11 +4,13 @@ import {
     Image,
     KeyRound,
     LayoutDashboard,
+    Link2,
     LogOut,
     Upload,
     User,
 } from 'lucide-react';
 import { useState } from 'react';
+import { CreateShortlinkDialog } from '@/components/create-shortlink-dialog';
 import { UploadTwibbonDialog } from '@/components/upload-twibbon-dialog';
 import { VerifiedUserName } from '@/components/verified-user-name';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -49,6 +51,7 @@ const getInitials = (name: string): string =>
 export function TwibbonNavbar({ canRegister = true }: Props) {
     const { auth } = usePage<SharedProps>().props;
     const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+    const [shortlinkDialogOpen, setShortlinkDialogOpen] = useState(false);
 
     return (
         <header className="relative mb-8 flex flex-col gap-4 rounded-2xl border border-white/60 bg-white/80 p-5 shadow-sm backdrop-blur md:flex-row md:items-center md:justify-between">
@@ -122,6 +125,12 @@ export function TwibbonNavbar({ canRegister = true }: Props) {
                                     <Upload className="text-primary" />
                                     Upload Twibbon
                                 </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onSelect={() => setShortlinkDialogOpen(true)}
+                                >
+                                    <Link2 className="text-primary" />
+                                    Buat Shortlink
+                                </DropdownMenuItem>
                                 <DropdownMenuItem asChild>
                                     <Link href="/my-profile/password">
                                         <KeyRound className="text-primary" />
@@ -143,6 +152,10 @@ export function TwibbonNavbar({ canRegister = true }: Props) {
                         <UploadTwibbonDialog
                             open={uploadDialogOpen}
                             onOpenChange={setUploadDialogOpen}
+                        />
+                        <CreateShortlinkDialog
+                            open={shortlinkDialogOpen}
+                            onOpenChange={setShortlinkDialogOpen}
                         />
                     </>
                 ) : (

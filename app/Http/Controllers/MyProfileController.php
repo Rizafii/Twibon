@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Settings\PasswordUpdateRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
+use App\Models\ShortLink;
 use App\Models\Twibone;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
@@ -18,10 +19,17 @@ class MyProfileController extends Controller
     {
         $search = trim((string) $request->string('search'));
         $status = (string) $request->string('status', 'all');
+        $tab = (string) $request->string('tab', 'twibbon');
+
+        if (! in_array($tab, ['twibbon', 'url'], true)) {
+            $tab = 'twibbon';
+        }
 
         if (! in_array($status, ['all', 'approved', 'pending'], true)) {
             $status = 'all';
         }
+
+        $user = $request->user();
 
         $analyticsCounts = [
             'usages',
@@ -33,7 +41,7 @@ class MyProfileController extends Controller
         ];
 
         $userTwibbons = Twibone::query()
-            ->where('users_uid', $request->user()->id)
+            ->where('users_uid', $user->id)
             ->withCount($analyticsCounts)
             ->get();
 
@@ -42,7 +50,7 @@ class MyProfileController extends Controller
             ->first();
 
         $twibbons = Twibone::query()
-            ->where('users_uid', $request->user()->id)
+            ->where('users_uid', $user->id)
             ->withCount($analyticsCounts)
             ->when($status === 'approved', function ($query): void {
                 $query->where('is_approved', true);
@@ -65,6 +73,10 @@ class MyProfileController extends Controller
                     'name' => $twibone->name,
                     'description' => $twibone->description,
                     'slug' => $twibone->url,
+                    'custom_url' => $twibone->custom_url,
+                    'public_url' => $twibone->custom_url
+                        ? url('/' . $twibone->custom_url)
+                        : url('/twibbon/' . $twibone->url),
                     'preview_url' => asset('storage/' . ltrim($twibone->path, '/')),
                     'is_approved' => $twibone->is_approved,
                     'uses_count' => $twibone->usages_count,
@@ -75,7 +87,16 @@ class MyProfileController extends Controller
                 ];
             });
 
-        $user = $request->user();
+        $shortLinks = ShortLink::query()
+            ->where('users_uid', $user->id)
+            ->withCount([
+                'clicks',
+                'clicks as clicks_last_7_days_count' => function ($query): void {
+                    $query->where('created_at', '>=', now()->subDays(7));
+                },
+            ])
+            ->latest()
+            ->get();
 
         $profilePhotoUrl = $user->profile_photo_path
             ? asset('storage/' . ltrim((string) $user->profile_photo_path, '/'))
@@ -103,6 +124,7 @@ class MyProfileController extends Controller
             'filters' => [
                 'search' => $search,
                 'status' => $status,
+                'tab' => $tab,
             ],
             'stats' => [
                 'total_twibbons' => $userTwibbons->count(),
@@ -110,8 +132,9 @@ class MyProfileController extends Controller
                 'pending_twibbons' => $userTwibbons->where('is_approved', false)->count(),
                 'total_uses' => (int) $userTwibbons->sum('usages_count'),
                 'uses_last_7_days' => (int) $userTwibbons->sum('usages_last_7_days_count'),
-                'total_links' => (int) $userTwibbons->sum('links_count'),
-                'total_link_clicks' => (int) $userTwibbons->sum('link_clicks_count'),
+                'total_links' => (int) $shortLinks->count(),
+                'total_link_clicks' => (int) $shortLinks->sum('clicks_count'),
+                'total_link_clicks_last_7_days' => (int) $shortLinks->sum('clicks_last_7_days_count'),
                 'top_twibbon' => $topTwibbon ? [
                     'name' => $topTwibbon->name,
                     'slug' => $topTwibbon->url,
@@ -119,12 +142,34 @@ class MyProfileController extends Controller
                 ] : null,
             ],
             'twibbons' => $twibbons,
+            'short_links' => $shortLinks
+                ->map(function (ShortLink $shortLink): array {
+                    return [
+                        'id' => $shortLink->id,
+                        'label' => $shortLink->label,
+                        'slug' => $shortLink->slug,
+                        'target_url' => $shortLink->target_url,
+                        'is_private' => $shortLink->is_private,
+                        'is_active' => $shortLink->is_active,
+                        'clicks_count' => (int) $shortLink->clicks_count,
+                        'clicks_last_7_days_count' => (int) $shortLink->clicks_last_7_days_count,
+                        'public_url' => url('/' . $shortLink->slug),
+                        'created_at' => $shortLink->created_at?->toDateTimeString(),
+                    ];
+                })
+                ->values(),
         ]);
     }
 
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
         $user = $request->user();
+        $tab = (string) $request->string('tab', 'twibbon');
+
+        if (! in_array($tab, ['twibbon', 'url'], true)) {
+            $tab = 'twibbon';
+        }
+
         $validated = $request->validated();
 
         unset($validated['profile_photo_path'], $validated['banner_photo_path']);
@@ -153,7 +198,7 @@ class MyProfileController extends Controller
 
         $user->save();
 
-        return to_route('my-profile.show')->with('success', 'Profil berhasil diperbarui.');
+        return to_route('my-profile.show', ['tab' => $tab])->with('success', 'Profil berhasil diperbarui.');
     }
 
     public function password(): Response

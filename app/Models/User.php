@@ -88,4 +88,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Twibone::class, 'users_uid');
     }
+
+    public function shortLinks(): HasMany
+    {
+        return $this->hasMany(ShortLink::class, 'users_uid');
+    }
 }
