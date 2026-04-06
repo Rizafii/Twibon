@@ -141,6 +141,7 @@ type ProfileForm = {
     profile_photo_path: File | null;
     banner_photo_path: File | null;
     tab: 'twibbon' | 'url';
+    _method: 'patch';
 };
 
 type TwibbonFilterForm = {
@@ -201,7 +202,7 @@ export default function MyProfile({
     const {
         data: profileData,
         setData: setProfileData,
-        patch: patchProfile,
+        post: postProfile,
         processing: profileProcessing,
         errors: profileErrors,
         clearErrors: clearProfileErrors,
@@ -213,6 +214,7 @@ export default function MyProfile({
         profile_photo_path: null,
         banner_photo_path: null,
         tab: activeTab,
+        _method: 'patch',
     });
 
     const {
@@ -255,7 +257,7 @@ export default function MyProfile({
     const handleProfileSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        patchProfile('/my-profile', {
+        postProfile('/my-profile', {
             preserveScroll: true,
             forceFormData: true,
             onSuccess: () => {
