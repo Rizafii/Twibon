@@ -2,22 +2,24 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Settings\PasswordUpdateRequest;
+use App\Http\Requests\Settings\ProfileUpdateRequest;
 use App\Models\Twibone;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class TwibbonMineController extends Controller
+class MyProfileController extends Controller
 {
-    public function index(Request $request): Response
+    public function show(Request $request): Response
     {
         $search = trim((string) $request->string('search'));
         $status = (string) $request->string('status', 'all');
 
-        if (!in_array($status, ['all', 'approved', 'pending'], true)) {
+        if (! in_array($status, ['all', 'approved', 'pending'], true)) {
             $status = 'all';
         }
 
@@ -63,7 +65,7 @@ class TwibbonMineController extends Controller
                     'name' => $twibone->name,
                     'description' => $twibone->description,
                     'slug' => $twibone->url,
-                    'preview_url' => asset('storage/'.ltrim($twibone->path, '/')),
+                    'preview_url' => asset('storage/' . ltrim($twibone->path, '/')),
                     'is_approved' => $twibone->is_approved,
                     'uses_count' => $twibone->usages_count,
                     'uses_last_7_days_count' => $twibone->usages_last_7_days_count,
@@ -73,7 +75,31 @@ class TwibbonMineController extends Controller
                 ];
             });
 
-        return Inertia::render('twibbon/my', [
+        $user = $request->user();
+
+        $profilePhotoUrl = $user->profile_photo_path
+            ? asset('storage/' . ltrim((string) $user->profile_photo_path, '/'))
+            : null;
+
+        $bannerPhotoUrl = $user->banner_photo_path
+            ? asset('storage/' . ltrim((string) $user->banner_photo_path, '/'))
+            : null;
+
+        return Inertia::render('profile/my', [
+            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'status' => $request->session()->get('status'),
+            'profile' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'username' => $user->username,
+                'email' => $user->email,
+                'bio' => $user->bio,
+                'verified' => (bool) $user->verified,
+                'email_verified_at' => $user->email_verified_at?->toIso8601String(),
+                'profile_photo_url' => $profilePhotoUrl,
+                'banner_photo_url' => $bannerPhotoUrl,
+                'joined_at' => $user->created_at?->toIso8601String(),
+            ],
             'filters' => [
                 'search' => $search,
                 'status' => $status,
@@ -96,70 +122,51 @@ class TwibbonMineController extends Controller
         ]);
     }
 
-    public function edit(Request $request, Twibone $twibone): Response
+    public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $this->ensureOwner($request, $twibone);
+        $user = $request->user();
+        $validated = $request->validated();
 
-        return Inertia::render('twibbon/edit', [
-            'twibbon' => [
-                'id' => $twibone->id,
-                'name' => $twibone->name,
-                'description' => $twibone->description,
-                'slug' => $twibone->url,
-                'preview_url' => asset('storage/'.ltrim($twibone->path, '/')),
-                'is_approved' => $twibone->is_approved,
-            ],
-        ]);
-    }
+        unset($validated['profile_photo_path'], $validated['banner_photo_path']);
 
-    public function update(Request $request, Twibone $twibone): RedirectResponse
-    {
-        $this->ensureOwner($request, $twibone);
+        $user->fill($validated);
 
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
-            'description' => ['required', 'string', 'max:1200'],
-        ]);
+        if ($request->hasFile('profile_photo_path')) {
+            if ($user->profile_photo_path) {
+                Storage::disk('public')->delete($user->profile_photo_path);
+            }
 
-        $baseSlug = Str::slug($validated['name']);
-        $baseSlug = $baseSlug === '' ? 'twibbon' : $baseSlug;
-        $slug = $baseSlug;
-        $counter = 2;
-
-        while (
-            Twibone::query()
-                ->where('url', $slug)
-                ->whereKeyNot($twibone->id)
-                ->exists()
-        ) {
-            $slug = "{$baseSlug}-{$counter}";
-            $counter++;
+            $user->profile_photo_path = $request->file('profile_photo_path')?->store('users/profile-photos', 'public');
         }
 
-        $twibone->update([
-            'name' => $validated['name'],
-            'description' => $validated['description'],
-            'url' => $slug,
-        ]);
+        if ($request->hasFile('banner_photo_path')) {
+            if ($user->banner_photo_path) {
+                Storage::disk('public')->delete($user->banner_photo_path);
+            }
 
-        return to_route('my-profile.show')->with('success', 'Twibbon berhasil diperbarui.');
-    }
-
-    public function destroy(Request $request, Twibone $twibone): RedirectResponse
-    {
-        $this->ensureOwner($request, $twibone);
-
-        if ($twibone->path !== '') {
-            Storage::disk('public')->delete($twibone->path);
+            $user->banner_photo_path = $request->file('banner_photo_path')?->store('users/banners', 'public');
         }
 
-        $twibone->delete();
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
 
-        return to_route('my-profile.show')->with('success', 'Twibbon berhasil dihapus.');
+        $user->save();
+
+        return to_route('my-profile.show')->with('success', 'Profil berhasil diperbarui.');
     }
 
-    private function ensureOwner(Request $request, Twibone $twibone): void
+    public function password(): Response
     {
-        abort_if($request->user()->id !== $twibone->users_uid, 403);
+        return Inertia::render('profile/password');
+    }
+
+    public function updatePassword(PasswordUpdateRequest $request): RedirectResponse
+    {
+        $request->user()->update([
+            'password' => $request->password,
+        ]);
+
+        return back()->with('success', 'Password berhasil diperbarui.');
     }
 }

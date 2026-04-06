@@ -64,6 +64,7 @@ class CreatorController extends Controller
             ],
             'creator' => [
                 'id' => $user->id,
+                'username' => $user->username,
                 'name' => $user->name,
                 'bio' => $user->bio,
                 'verified' => (bool) $user->verified,

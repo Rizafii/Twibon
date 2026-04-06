@@ -42,7 +42,7 @@ export default function TwibbonEdit({ twibbon }: Props) {
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        patch(`/my-twibbon/${twibbon.id}`, {
+        patch(`/my-profile/twibbon/${twibbon.id}`, {
             preserveScroll: true,
         });
     };
@@ -56,9 +56,9 @@ export default function TwibbonEdit({ twibbon }: Props) {
                     <TwibbonNavbar />
 
                     <Button asChild variant="outline" size="sm" className="w-fit">
-                        <Link href="/my-twibbon">
+                        <Link href="/my-profile">
                             <ArrowLeftIcon className="size-4" />
-                            Kembali ke Twibbon Saya
+                            Kembali ke Profil Saya
                         </Link>
                     </Button>
 
@@ -137,7 +137,7 @@ export default function TwibbonEdit({ twibbon }: Props) {
                                     <CardFooter className="px-0 pt-1 pb-0">
                                         <div className="flex w-full flex-wrap justify-end gap-2">
                                             <Button asChild variant="outline">
-                                                <Link href="/my-twibbon">Batal</Link>
+                                                <Link href="/my-profile">Batal</Link>
                                             </Button>
                                             <Button type="submit" disabled={processing}>
                                                 {processing ? (

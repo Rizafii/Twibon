@@ -13,7 +13,7 @@ class TwibbonController extends Controller
     public function home(): Response
     {
         $approvedTwibbons = Twibone::query()
-            ->with('creator:id,name,bio,profile_photo_path,verified')
+            ->with('creator:id,name,username,bio,profile_photo_path,verified')
             ->withCount('usages')
             ->where('is_approved', true)
             ->get();
@@ -29,6 +29,7 @@ class TwibbonController extends Controller
                     'slug' => $twibone->url,
                     'preview_url' => asset('storage/' . ltrim($twibone->path, '/')),
                     'creator_id' => $twibone->creator?->id,
+                    'creator_username' => $twibone->creator?->username,
                     'creator_name' => $twibone->creator?->name ?? 'Unknown',
                     'creator_verified' => (bool) ($twibone->creator?->verified ?? false),
                     'uses_count' => $twibone->usages_count,
@@ -49,6 +50,7 @@ class TwibbonController extends Controller
 
                 return [
                     'id' => $firstTwibbon->creator?->id,
+                    'username' => $firstTwibbon->creator?->username,
                     'name' => $firstTwibbon->creator?->name ?? 'Unknown',
                     'bio' => $firstTwibbon->creator?->bio,
                     'profile_photo_url' => $profilePhotoUrl,
@@ -77,7 +79,7 @@ class TwibbonController extends Controller
         $search = trim((string) $request->string('search'));
 
         $twibbons = Twibone::query()
-            ->with('creator:id,name,verified')
+            ->with('creator:id,name,username,verified')
             ->withCount('usages')
             ->where('is_approved', true)
             ->when($search !== '', function ($query) use ($search): void {
@@ -98,6 +100,7 @@ class TwibbonController extends Controller
                     'slug' => $twibone->url,
                     'preview_url' => asset('storage/' . ltrim($twibone->path, '/')),
                     'creator_id' => $twibone->creator?->id,
+                    'creator_username' => $twibone->creator?->username,
                     'creator_name' => $twibone->creator?->name ?? 'Unknown',
                     'creator_verified' => (bool) ($twibone->creator?->verified ?? false),
                     'uses_count' => $twibone->usages_count,
@@ -116,7 +119,7 @@ class TwibbonController extends Controller
     public function show(string $slug): Response
     {
         $twibbon = Twibone::query()
-            ->with('creator:id,name,bio,profile_photo_path,banner_photo_path,verified')
+            ->with('creator:id,name,username,bio,profile_photo_path,banner_photo_path,verified')
             ->withCount('usages')
             ->where('is_approved', true)
             ->where('url', $slug)
@@ -141,6 +144,7 @@ class TwibbonController extends Controller
                 'creator_name' => $twibbon->creator?->name ?? 'Unknown',
                 'creator' => [
                     'id' => $twibbon->creator?->id,
+                    'username' => $twibbon->creator?->username,
                     'name' => $twibbon->creator?->name ?? 'Unknown',
                     'bio' => $twibbon->creator?->bio,
                     'profile_photo_url' => $creatorProfilePhotoUrl,

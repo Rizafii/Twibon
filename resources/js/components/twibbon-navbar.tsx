@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import {
     ChevronDownIcon,
     Image,
+    KeyRound,
     LayoutDashboard,
     LogOut,
     Upload,
@@ -19,7 +20,6 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { dashboard, home, login, logout, register } from '@/routes';
-import { edit } from '@/routes/profile';
 
 type Props = {
     canRegister?: boolean;
@@ -111,9 +111,9 @@ export function TwibbonNavbar({ canRegister = true }: Props) {
                                     </DropdownMenuItem>
                                 )}
                                 <DropdownMenuItem asChild>
-                                    <Link href="/my-twibbon">
-                                        <Image className="text-primary" />
-                                        Twibbon Saya
+                                    <Link href="/my-profile">
+                                        <User className="text-primary" />
+                                        Profil Saya
                                     </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
@@ -123,9 +123,9 @@ export function TwibbonNavbar({ canRegister = true }: Props) {
                                     Upload Twibbon
                                 </DropdownMenuItem>
                                 <DropdownMenuItem asChild>
-                                    <Link href={edit()}>
-                                        <User className="text-primary" />
-                                        Profile Settings
+                                    <Link href="/my-profile/password">
+                                        <KeyRound className="text-primary" />
+                                        Ganti Password
                                     </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem asChild>

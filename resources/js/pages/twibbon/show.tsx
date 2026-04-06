@@ -27,6 +27,7 @@ type Props = {
         creator_name: string;
         creator: {
             id: number | null;
+            username?: string | null;
             name: string;
             bio?: string | null;
             profile_photo_url?: string | null;
@@ -162,9 +163,9 @@ export default function TwibbonShow({ twibbon }: Props) {
                                                 </AvatarFallback>
                                             </Avatar>
                                             <div>
-                                                {twibbon.creator.id !== null ? (
+                                                {twibbon.creator.username ? (
                                                     <Link
-                                                        href={`/creator/${twibbon.creator.id}`}
+                                                        href={`/creator/${twibbon.creator.username}`}
                                                         className="font-medium text-slate-900 hover:underline"
                                                     >
                                                         <VerifiedUserName

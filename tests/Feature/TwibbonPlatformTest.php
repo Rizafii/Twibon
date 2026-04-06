@@ -76,11 +76,11 @@ test('authenticated user can view my twibbon analytics page', function () {
     ]);
 
     $this->actingAs($user)
-        ->get('/my-twibbon')
+        ->get('/my-profile')
         ->assertOk()
         ->assertInertia(
             fn(Assert $page) => $page
-                ->component('twibbon/my')
+                ->component('profile/my')
                 ->where('stats.total_twibbons', 1)
                 ->where('twibbons.data.0.slug', $myTwibbon->url),
         );
@@ -108,11 +108,11 @@ test('owner can open edit page and update own twibbon', function () {
         );
 
     $this->actingAs($user)
-        ->patch("/my-twibbon/{$twibone->id}", [
+        ->patch("/my-profile/twibbon/{$twibone->id}", [
             'name' => 'My Updated Twibbon',
             'description' => 'Updated description.',
         ])
-        ->assertRedirect('/my-twibbon');
+        ->assertRedirect('/my-profile');
 
     $this->assertDatabaseHas('twibone', [
         'id' => $twibone->id,
@@ -135,8 +135,8 @@ test('owner can delete own twibbon', function () {
     ]);
 
     $this->actingAs($user)
-        ->delete("/my-twibbon/{$twibone->id}")
-        ->assertRedirect('/my-twibbon');
+        ->delete("/my-profile/twibbon/{$twibone->id}")
+        ->assertRedirect('/my-profile');
 
     $this->assertDatabaseMissing('twibone', [
         'id' => $twibone->id,
@@ -268,7 +268,7 @@ test('guest can view creator detail with latest sorting and approved twibbons on
         'is_approved' => false,
     ]);
 
-    $this->get("/creator/{$creator->id}")
+    $this->get("/creator/{$creator->username}")
         ->assertOk()
         ->assertInertia(
             fn(Assert $page) => $page
@@ -315,7 +315,7 @@ test('creator detail can be sorted by most popular', function () {
         ]);
     }
 
-    $this->get("/creator/{$creator->id}?sort=popular")
+    $this->get("/creator/{$creator->username}?sort=popular")
         ->assertOk()
         ->assertInertia(
             fn(Assert $page) => $page

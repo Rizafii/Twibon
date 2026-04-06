@@ -12,10 +12,11 @@ trait ProfileValidationRules
      *
      * @return array<string, array<int, \Illuminate\Contracts\Validation\Rule|array<mixed>|string>>
      */
-    protected function profileRules(?int $userId = null): array
+    protected function profileRules(?int $userId = null, bool $requireUsername = false): array
     {
         return [
             'name' => $this->nameRules(),
+            'username' => $this->usernameRules($userId, $requireUsername),
             'email' => $this->emailRules($userId),
             'bio' => ['nullable', 'string', 'max:500'],
             'profile_photo_path' => [
@@ -30,6 +31,25 @@ trait ProfileValidationRules
                 'mimes:jpg,jpeg,png,webp',
                 'max:4096',
             ],
+        ];
+    }
+
+    /**
+     * Get the validation rules used to validate usernames.
+     *
+     * @return array<int, \Illuminate\Contracts\Validation\Rule|array<mixed>|string>
+     */
+    protected function usernameRules(?int $userId = null, bool $required = false): array
+    {
+        return [
+            $required ? 'required' : 'sometimes',
+            'string',
+            'min:3',
+            'max:40',
+            'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+            $userId === null
+                ? Rule::unique(User::class, 'username')
+                : Rule::unique(User::class, 'username')->ignore($userId),
         ];
     }
 

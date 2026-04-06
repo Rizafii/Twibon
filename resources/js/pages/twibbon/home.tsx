@@ -28,6 +28,7 @@ type TrendingTwibbon = {
     slug: string;
     preview_url: string;
     creator_id: number | null;
+    creator_username?: string | null;
     creator_name: string;
     creator_verified: boolean;
     uses_count: number;
@@ -35,6 +36,7 @@ type TrendingTwibbon = {
 
 type RisingCreator = {
     id: number | null;
+    username?: string | null;
     name: string;
     bio?: string | null;
     profile_photo_url?: string | null;
@@ -182,9 +184,9 @@ export default function TwibbonHome({
 
                                         <CardContent className="px-4 pt-0 pb-4">
                                             <div className="flex items-center justify-between gap-2">
-                                                {twibbon.creator_id !== null ? (
+                                                {twibbon.creator_username ? (
                                                     <Link
-                                                        href={`/creator/${twibbon.creator_id}`}
+                                                        href={`/creator/${twibbon.creator_username}`}
                                                         className="-mx-1 flex items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-slate-100/70"
                                                     >
                                                         <Avatar className="h-7 w-7 overflow-hidden rounded-full">
@@ -282,12 +284,12 @@ export default function TwibbonHome({
                                     <Link
                                         key={`${creator.name}-${index}`}
                                         href={
-                                            creator.id !== null
-                                                ? `/creator/${creator.id}`
+                                            creator.username
+                                                ? `/creator/${creator.username}`
                                                 : '#'
                                         }
                                         className={
-                                            creator.id !== null
+                                            creator.username
                                                 ? 'block'
                                                 : 'pointer-events-none block'
                                         }

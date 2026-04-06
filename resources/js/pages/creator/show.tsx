@@ -21,6 +21,7 @@ import {
 
 type Creator = {
     id: number;
+    username: string;
     name: string;
     bio?: string | null;
     verified: boolean;
@@ -207,7 +208,7 @@ export default function CreatorShow({
                                     }
                                 >
                                     <Link
-                                        href={`/creator/${creator.id}?sort=latest`}
+                                        href={`/creator/${creator.username}?sort=latest`}
                                     >
                                         <CalendarDaysIcon className="size-4" />
                                         Terbaru
@@ -223,7 +224,7 @@ export default function CreatorShow({
                                     }
                                 >
                                     <Link
-                                        href={`/creator/${creator.id}?sort=popular`}
+                                        href={`/creator/${creator.username}?sort=popular`}
                                     >
                                         <FlameIcon className="size-4" />
                                         Terpopuler
