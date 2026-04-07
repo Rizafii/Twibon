@@ -17,6 +17,7 @@ return new class extends Migration
             $table->text('description');
             $table->string('path');
             $table->string('url')->unique();
+            $table->string('custom_url')->nullable()->unique();
             $table->foreignId('users_uid')->constrained('users')->cascadeOnDelete();
             $table->boolean('is_approved')->default(false);
             $table->timestamps();

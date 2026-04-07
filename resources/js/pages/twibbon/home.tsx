@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { TwibbonFooter } from '@/components/twibbon-footer';
 import { TwibbonNavbar } from '@/components/twibbon-navbar';
+import { CreateShortlinkDialog } from '@/components/create-shortlink-dialog';
 import { UploadTwibbonDialog } from '@/components/upload-twibbon-dialog';
 import { VerifiedUserName } from '@/components/verified-user-name';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -26,6 +27,9 @@ type TrendingTwibbon = {
     id: number;
     name: string;
     slug: string;
+    custom_url?: string | null;
+    public_path: string;
+    public_display_url: string;
     preview_url: string;
     creator_id: number | null;
     creator_username?: string | null;
@@ -164,7 +168,7 @@ export default function TwibbonHome({
                                         className="min-w-60 shrink-0 snap-start overflow-hidden bg-white/95 py-0 shadow-none transition-shadow hover:shadow-md sm:min-w-0"
                                     >
                                         <Link
-                                            href={`/twibbon/${twibbon.slug}`}
+                                            href={twibbon.public_path}
                                             className="block"
                                         >
                                             <div className="relative h-56 bg-slate-100">
@@ -376,22 +380,46 @@ export default function TwibbonHome({
                     </section>
 
                     <section>
-                        <Card>
-                            <CardHeader>
+                        <Card className="overflow-hidden border-slate-200/80 bg-white/95 py-0">
+                            <div className="h-1.5 bg-linear-to-r from-cyan-300 via-sky-300 to-emerald-300" />
+
+                            <CardHeader className="space-y-3 pt-5">
                                 <div className="flex items-center gap-2">
                                     <Link2Icon className="size-5 text-slate-700" />
-                                    <CardTitle>Shortlink Sekolah</CardTitle>
+                                    <CardTitle>Shortlink Sekolah Sudah Aktif</CardTitle>
                                 </div>
                                 <CardDescription>
-                                    Fitur shortlink resmi untuk publikasi acara
-                                    SMKN 6 Surakarta akan terintegrasi dalam
-                                    platform ini.
+                                    Fitur shortlink resmi kini sudah bisa
+                                    dipakai untuk publikasi acara SMKN 6
+                                    Surakarta. Buat URL publik seperti
+                                    <span className="mx-1 rounded bg-slate-100 px-1.5 py-0.5 font-medium text-slate-800">
+                                        /osis-smkn6
+                                    </span>
+                                    dan pantau performa klik dari URL Manager.
                                 </CardDescription>
+
+                                <div className="inline-flex w-fit items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700">
+                                    <TrendingUpIcon className="size-3.5" />
+                                    {stats.approved_twibbons} twibbon approved
+                                    siap dipromosikan via shortlink
+                                </div>
                             </CardHeader>
-                            <CardFooter>
+
+                            <CardFooter className="flex flex-wrap gap-2 pb-5">
+                                <CreateShortlinkDialog>
+                                    {(openShortlinkDialog) => (
+                                        <Button
+                                            type="button"
+                                            onClick={openShortlinkDialog}
+                                        >
+                                            Buat Shortlink
+                                        </Button>
+                                    )}
+                                </CreateShortlinkDialog>
+
                                 <Button asChild variant="outline">
-                                    <Link href="/catalog">
-                                        Jelajahi Twibbon Dulu
+                                    <Link href="/my-profile?tab=url">
+                                        Buka URL Manager
                                     </Link>
                                 </Button>
                             </CardFooter>

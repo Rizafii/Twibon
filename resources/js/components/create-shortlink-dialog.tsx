@@ -35,6 +35,7 @@ type SharedProps = {
             id: number;
         } | null;
     };
+    public_domain: string;
 };
 
 type Props = {
@@ -61,6 +62,7 @@ type CreateShortLinkResponse = {
         target_url: string;
         is_active: boolean;
         public_url: string;
+        public_display_url: string;
     };
     errors?: Partial<Record<keyof ShortLinkForm, string[]>>;
 };
@@ -126,7 +128,7 @@ const extractErrors = (payload: CreateShortLinkResponse): FormErrors => {
 };
 
 export function CreateShortlinkDialog({ children, open, onOpenChange }: Props) {
-    const { auth } = usePage<SharedProps>().props;
+    const { auth, public_domain: publicDomain } = usePage<SharedProps>().props;
     const [copiedText, copy] = useClipboard();
     const [internalOpen, setInternalOpen] = useState(false);
     const [successOpen, setSuccessOpen] = useState(false);
@@ -142,6 +144,14 @@ export function CreateShortlinkDialog({ children, open, onOpenChange }: Props) {
         () => createdPublicUrl !== '' && copiedText === createdPublicUrl,
         [copiedText, createdPublicUrl],
     );
+
+    const buildDisplayUrl = (slug: string): string => {
+        const normalizedSlug = slug.trim().replace(/^\/+/, '');
+
+        return normalizedSlug === ''
+            ? publicDomain
+            : `${publicDomain}/${normalizedSlug}`;
+    };
 
     const setDialogOpen = (nextOpen: boolean) => {
         if (open === undefined) {
@@ -215,7 +225,10 @@ export function CreateShortlinkDialog({ children, open, onOpenChange }: Props) {
 
             setDialogOpen(false);
             resetForm();
-            setCreatedPublicUrl(payload.short_link.public_url);
+            setCreatedPublicUrl(
+                payload.short_link.public_display_url
+                || buildDisplayUrl(payload.short_link.slug),
+            );
             setSuccessBurstKey((current) => current + 1);
             setSuccessOpen(true);
         } catch {
@@ -281,7 +294,7 @@ export function CreateShortlinkDialog({ children, open, onOpenChange }: Props) {
                                 placeholder="contoh: osis-smkn6"
                             />
                             <p className="text-xs text-slate-500">
-                                URL publik: /{formData.slug || 'slug-kamu'}
+                                URL publik: {buildDisplayUrl(formData.slug || 'slug-kamu')}
                             </p>
                             {formErrors.slug && (
                                 <p className="text-sm text-red-600">{formErrors.slug}</p>

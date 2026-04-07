@@ -101,6 +101,10 @@ class TwibbonMineController extends Controller
     {
         $this->ensureOwner($request, $twibone);
 
+        $publicPath = $twibone->custom_url
+            ? $twibone->custom_url
+            : 'twibbon/' . $twibone->url;
+
         return Inertia::render('twibbon/edit', [
             'twibbon' => [
                 'id' => $twibone->id,
@@ -108,9 +112,8 @@ class TwibbonMineController extends Controller
                 'description' => $twibone->description,
                 'slug' => $twibone->url,
                 'custom_url' => $twibone->custom_url,
-                'public_url' => $twibone->custom_url
-                    ? url('/' . $twibone->custom_url)
-                    : url('/twibbon/' . $twibone->url),
+                'public_url' => url('/' . $publicPath),
+                'public_display_url' => PublicPath::displayUrl($publicPath),
                 'preview_url' => asset('storage/'.ltrim($twibone->path, '/')),
                 'is_approved' => $twibone->is_approved,
             ],

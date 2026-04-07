@@ -28,6 +28,8 @@ type TwibbonRow = {
     description: string;
     preview_url: string;
     custom_url?: string | null;
+    public_path: string;
+    public_display_url: string;
     creator_name: string;
     is_approved: boolean;
     uses_count: number;
@@ -217,10 +219,10 @@ export default function AdminTwibbonIndex({ filters, twibbons }: Props) {
                                                         {twibbon.name}
                                                     </div>
                                                     <Link
-                                                        href={`/twibbon/${twibbon.slug}`}
+                                                        href={twibbon.public_path}
                                                         className="text-xs text-slate-500 underline"
                                                     >
-                                                        /twibbon/{twibbon.slug}
+                                                        {twibbon.public_path}
                                                     </Link>
                                                 </td>
                                                 <td className="px-4 py-3">
@@ -376,9 +378,9 @@ export default function AdminTwibbonIndex({ filters, twibbons }: Props) {
                                 </p>
                                 <p>
                                     <span className="font-medium text-slate-900">
-                                        Slug:
+                                        URL Publik:
                                     </span>{' '}
-                                    /twibbon/{selectedDetail.slug}
+                                    {selectedDetail.public_display_url}
                                 </p>
                                 <p>
                                     <span className="font-medium text-slate-900">
@@ -423,7 +425,7 @@ export default function AdminTwibbonIndex({ filters, twibbons }: Props) {
                                 {selectedDetail.is_approved ? (
                                     <Button asChild variant="outline" size="sm">
                                         <Link
-                                            href={`/twibbon/${selectedDetail.slug}`}
+                                            href={selectedDetail.public_path}
                                         >
                                             Buka Halaman Twibbon
                                         </Link>

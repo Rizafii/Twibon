@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { ArrowLeftIcon, PencilLineIcon } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { TwibbonFooter } from '@/components/twibbon-footer';
@@ -25,9 +25,14 @@ type Props = {
         slug: string;
         custom_url?: string | null;
         public_url: string;
+        public_display_url: string;
         preview_url: string;
         is_approved: boolean;
     };
+};
+
+type SharedProps = {
+    public_domain: string;
 };
 
 type EditForm = {
@@ -37,6 +42,7 @@ type EditForm = {
 };
 
 export default function TwibbonEdit({ twibbon }: Props) {
+    const { public_domain: publicDomain } = usePage<SharedProps>().props;
     const { data, setData, patch, processing, errors } = useForm<EditForm>({
         name: twibbon.name,
         description: twibbon.description,
@@ -83,13 +89,8 @@ export default function TwibbonEdit({ twibbon }: Props) {
                                         <Badge variant="secondary">Pending</Badge>
                                     )}
                                     <span className="text-xs text-slate-500">
-                                        /twibbon/{twibbon.slug}
+                                        {twibbon.public_display_url}
                                     </span>
-                                    {twibbon.custom_url ? (
-                                        <span className="text-xs text-slate-500">
-                                            /{twibbon.custom_url}
-                                        </span>
-                                    ) : null}
                                 </div>
                             </div>
 
@@ -155,7 +156,7 @@ export default function TwibbonEdit({ twibbon }: Props) {
                                                 placeholder="contoh: osis-smkn6"
                                             />
                                             <p className="text-xs text-slate-500">
-                                                URL publik: /
+                                                URL publik: {publicDomain}/
                                                 {data.custom_url || 'custom-url-kamu'}
                                             </p>
                                             {errors.custom_url && (

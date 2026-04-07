@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Twibone;
+use App\Support\PublicPath;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -26,6 +27,10 @@ class TwibbonApprovalController extends Controller
             ->paginate(20)
             ->withQueryString()
             ->through(function (Twibone $twibone): array {
+                $publicPath = $twibone->custom_url
+                    ? '/' . $twibone->custom_url
+                    : '/twibbon/' . $twibone->url;
+
                 return [
                     'id' => $twibone->id,
                     'name' => $twibone->name,
@@ -33,6 +38,8 @@ class TwibbonApprovalController extends Controller
                     'description' => $twibone->description,
                     'preview_url' => asset('storage/' . ltrim($twibone->path, '/')),
                     'custom_url' => $twibone->custom_url,
+                    'public_path' => $publicPath,
+                    'public_display_url' => PublicPath::displayUrl(ltrim($publicPath, '/')),
                     'creator_name' => $twibone->creator?->name ?? 'Unknown',
                     'is_approved' => $twibone->is_approved,
                     'uses_count' => $twibone->usages_count,

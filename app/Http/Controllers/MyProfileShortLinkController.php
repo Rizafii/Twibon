@@ -34,6 +34,7 @@ class MyProfileShortLinkController extends Controller
                     'target_url' => $shortLink->target_url,
                     'is_active' => $shortLink->is_active,
                     'public_url' => url('/' . $shortLink->slug),
+                    'public_display_url' => PublicPath::displayUrl($shortLink->slug),
                 ],
             ], 201);
         }

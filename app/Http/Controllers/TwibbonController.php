@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Twibone;
+use App\Support\PublicPath;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,6 +24,10 @@ class TwibbonController extends Controller
             ->take(10)
             ->values()
             ->map(function (Twibone $twibone): array {
+                $publicPath = $twibone->custom_url
+                    ? '/' . $twibone->custom_url
+                    : '/twibbon/' . $twibone->url;
+
                 $creatorProfilePhotoUrl = $twibone->creator?->profile_photo_path
                     ? asset('storage/' . ltrim((string) $twibone->creator->profile_photo_path, '/'))
                     : null;
@@ -31,6 +36,9 @@ class TwibbonController extends Controller
                     'id' => $twibone->id,
                     'name' => $twibone->name,
                     'slug' => $twibone->url,
+                    'custom_url' => $twibone->custom_url,
+                    'public_path' => $publicPath,
+                    'public_display_url' => PublicPath::displayUrl(ltrim($publicPath, '/')),
                     'preview_url' => asset('storage/' . ltrim($twibone->path, '/')),
                     'creator_id' => $twibone->creator?->id,
                     'creator_username' => $twibone->creator?->username,
@@ -97,12 +105,19 @@ class TwibbonController extends Controller
             ->paginate(12)
             ->withQueryString()
             ->through(function (Twibone $twibone): array {
+                $publicPath = $twibone->custom_url
+                    ? '/' . $twibone->custom_url
+                    : '/twibbon/' . $twibone->url;
+
                 return [
                     'id' => $twibone->id,
                     'name' => $twibone->name,
                     'description' => $twibone->description,
                     'created_at' => $twibone->created_at?->toIso8601String(),
                     'slug' => $twibone->url,
+                    'custom_url' => $twibone->custom_url,
+                    'public_path' => $publicPath,
+                    'public_display_url' => PublicPath::displayUrl(ltrim($publicPath, '/')),
                     'preview_url' => asset('storage/' . ltrim($twibone->path, '/')),
                     'creator_id' => $twibone->creator?->id,
                     'creator_username' => $twibone->creator?->username,
@@ -147,6 +162,10 @@ class TwibbonController extends Controller
 
     private function renderShowPage(Twibone $twibbon): Response
     {
+        $publicPath = $twibbon->custom_url
+            ? '/' . $twibbon->custom_url
+            : '/twibbon/' . $twibbon->url;
+
         $creatorProfilePhotoUrl = $twibbon->creator?->profile_photo_path
             ? asset('storage/' . ltrim((string) $twibbon->creator->profile_photo_path, '/'))
             : null;
@@ -163,6 +182,8 @@ class TwibbonController extends Controller
                 'created_at' => $twibbon->created_at?->toIso8601String(),
                 'slug' => $twibbon->url,
                 'custom_url' => $twibbon->custom_url,
+                'public_path' => $publicPath,
+                'public_display_url' => PublicPath::displayUrl(ltrim($publicPath, '/')),
                 'preview_url' => asset('storage/' . ltrim($twibbon->path, '/')),
                 'creator_name' => $twibbon->creator?->name ?? 'Unknown',
                 'creator' => [

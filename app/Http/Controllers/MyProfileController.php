@@ -6,6 +6,7 @@ use App\Http\Requests\Settings\PasswordUpdateRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
 use App\Models\ShortLink;
 use App\Models\Twibone;
+use App\Support\PublicPath;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -68,15 +69,18 @@ class MyProfileController extends Controller
             ->paginate(9)
             ->withQueryString()
             ->through(function (Twibone $twibone): array {
+                $publicPath = $twibone->custom_url
+                    ? $twibone->custom_url
+                    : 'twibbon/' . $twibone->url;
+
                 return [
                     'id' => $twibone->id,
                     'name' => $twibone->name,
                     'description' => $twibone->description,
                     'slug' => $twibone->url,
                     'custom_url' => $twibone->custom_url,
-                    'public_url' => $twibone->custom_url
-                        ? url('/' . $twibone->custom_url)
-                        : url('/twibbon/' . $twibone->url),
+                    'public_url' => url('/' . $publicPath),
+                    'public_display_url' => PublicPath::displayUrl($publicPath),
                     'preview_url' => asset('storage/' . ltrim($twibone->path, '/')),
                     'is_approved' => $twibone->is_approved,
                     'uses_count' => $twibone->usages_count,
@@ -154,6 +158,7 @@ class MyProfileController extends Controller
                         'clicks_count' => (int) $shortLink->clicks_count,
                         'clicks_last_7_days_count' => (int) $shortLink->clicks_last_7_days_count,
                         'public_url' => url('/' . $shortLink->slug),
+                        'public_display_url' => PublicPath::displayUrl($shortLink->slug),
                         'created_at' => $shortLink->created_at?->toDateTimeString(),
                     ];
                 })

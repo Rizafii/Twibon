@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 
 type SharedProps = {
+    public_domain: string;
     flash?: {
         success?: string | null;
     };
@@ -26,18 +27,28 @@ type SharedProps = {
 type UploadForm = {
     name: string;
     description: string;
+    custom_url: string;
     frame: File | null;
 };
 
 export default function TwibbonUpload() {
     const fileRef = useRef<HTMLInputElement | null>(null);
-    const { flash } = usePage<SharedProps>().props;
+    const { flash, public_domain: publicDomain } = usePage<SharedProps>().props;
     const { data, setData, post, processing, errors, reset } =
         useForm<UploadForm>({
             name: '',
             description: '',
+            custom_url: '',
             frame: null,
         });
+
+    const buildDisplayUrl = (path: string): string => {
+        const normalizedPath = path.trim().replace(/^\/+/, '');
+
+        return normalizedPath === ''
+            ? publicDomain
+            : `${publicDomain}/${normalizedPath}`;
+    };
 
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -119,6 +130,31 @@ export default function TwibbonUpload() {
                                         {errors.description && (
                                             <p className="text-sm text-red-600">
                                                 {errors.description}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="custom_url">
+                                            Custom URL (opsional)
+                                        </Label>
+                                        <Input
+                                            id="custom_url"
+                                            value={data.custom_url}
+                                            onChange={(event) =>
+                                                setData(
+                                                    'custom_url',
+                                                    event.target.value,
+                                                )
+                                            }
+                                            placeholder="contoh: osis-smkn6"
+                                        />
+                                        <p className="text-xs text-slate-500">
+                                            URL publik: {buildDisplayUrl(data.custom_url || 'custom-url-kamu')}
+                                        </p>
+                                        {errors.custom_url && (
+                                            <p className="text-sm text-red-600">
+                                                {errors.custom_url}
                                             </p>
                                         )}
                                     </div>

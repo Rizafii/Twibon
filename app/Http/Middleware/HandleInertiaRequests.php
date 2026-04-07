@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\PublicPath;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -62,6 +63,7 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
             ],
+            'public_domain' => PublicPath::displayDomain(),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

@@ -88,4 +88,51 @@ class PublicPath
 
         return ! self::isTaken($path, $ignoreTwiboneId, $ignoreShortLinkId);
     }
+
+    public static function displayDomain(): string
+    {
+        $configuredDomain = self::sanitizeDomain((string) config('app.domain_placeholder', ''));
+
+        if ($configuredDomain !== '') {
+            return $configuredDomain;
+        }
+
+        $fallbackDomain = self::sanitizeDomain((string) config('app.url', ''));
+
+        return $fallbackDomain !== '' ? $fallbackDomain : 'domain.com';
+    }
+
+    public static function displayUrl(string $path): string
+    {
+        $normalizedPath = ltrim(trim($path), '/');
+
+        if ($normalizedPath === '') {
+            return self::displayDomain();
+        }
+
+        return self::displayDomain() . '/' . $normalizedPath;
+    }
+
+    private static function sanitizeDomain(string $value): string
+    {
+        $normalized = trim($value);
+
+        if ($normalized === '') {
+            return '';
+        }
+
+        $parsedHost = parse_url($normalized, PHP_URL_HOST);
+        if (is_string($parsedHost) && $parsedHost !== '') {
+            $parsedPort = parse_url($normalized, PHP_URL_PORT);
+
+            return $parsedPort !== null
+                ? $parsedHost . ':' . (string) $parsedPort
+                : $parsedHost;
+        }
+
+        $normalized = preg_replace('/^https?:\/\//i', '', $normalized) ?? $normalized;
+        $normalized = preg_replace('/^\/\//', '', $normalized) ?? $normalized;
+
+        return rtrim($normalized, '/');
+    }
 }

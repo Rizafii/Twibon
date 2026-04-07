@@ -64,6 +64,7 @@ type TwibbonItem = {
     slug: string;
     custom_url?: string | null;
     public_url: string;
+    public_display_url: string;
     preview_url: string;
     is_approved: boolean;
     uses_count: number;
@@ -83,6 +84,7 @@ type ShortLinkItem = {
     clicks_count: number;
     clicks_last_7_days_count: number;
     public_url: string;
+    public_display_url: string;
     created_at: string | null;
 };
 
@@ -127,6 +129,7 @@ type Props = {
 };
 
 type SharedProps = {
+    public_domain: string;
     flash?: {
         success?: string | null;
         error?: string | null;
@@ -179,6 +182,12 @@ const formatDate = (dateTime: string | null): string => {
 const formatNumber = (value: number): string =>
     new Intl.NumberFormat('id-ID').format(value);
 
+const buildDisplayUrl = (domain: string, path: string): string => {
+    const normalizedPath = path.trim().replace(/^\/+/, '');
+
+    return normalizedPath === '' ? domain : `${domain}/${normalizedPath}`;
+};
+
 const getInitials = (name: string): string =>
     name
         .split(' ')
@@ -196,7 +205,7 @@ export default function MyProfile({
     twibbons,
     short_links,
 }: Props) {
-    const { flash } = usePage<SharedProps>().props;
+    const { flash, public_domain: publicDomain } = usePage<SharedProps>().props;
     const activeTab: 'twibbon' | 'url' = filters.tab === 'url' ? 'url' : 'twibbon';
 
     const {
@@ -692,9 +701,7 @@ export default function MyProfile({
                                                     className="inline-flex items-center gap-1 text-xs text-slate-600 underline underline-offset-2"
                                                 >
                                                     <ExternalLinkIcon className="size-3" />
-                                                    {twibbon.custom_url
-                                                        ? `/${twibbon.custom_url}`
-                                                        : `/twibbon/${twibbon.slug}`}
+                                                    {twibbon.public_display_url}
                                                 </a>
                                             </CardHeader>
 
@@ -918,7 +925,7 @@ export default function MyProfile({
                                                         className="inline-flex items-center gap-1 text-slate-700 underline underline-offset-2"
                                                     >
                                                         <ExternalLinkIcon className="size-3" />
-                                                        /{shortLink.slug}
+                                                        {shortLink.public_display_url}
                                                     </a>
                                                     <p className="break-all text-xs">
                                                         Tujuan: {shortLink.target_url}
@@ -1241,8 +1248,11 @@ export default function MyProfile({
                                 placeholder="contoh: osis-smkn6"
                             />
                             <p className="text-xs text-slate-500">
-                                URL publik: /
-                                {editShortLinkData.slug || 'slug-kamu'}
+                                URL publik:{' '}
+                                {buildDisplayUrl(
+                                    publicDomain,
+                                    editShortLinkData.slug || 'slug-kamu',
+                                )}
                             </p>
                             <InputError message={editShortLinkErrors.slug} />
                         </div>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Twibone;
 use App\Models\User;
+use App\Support\PublicPath;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -107,11 +108,18 @@ class CreatorController extends Controller
             ->paginate(12)
             ->withQueryString()
             ->through(function (Twibone $twibone): array {
+                $publicPath = $twibone->custom_url
+                    ? '/' . $twibone->custom_url
+                    : '/twibbon/' . $twibone->url;
+
                 return [
                     'id' => $twibone->id,
                     'name' => $twibone->name,
                     'description' => $twibone->description,
                     'slug' => $twibone->url,
+                    'custom_url' => $twibone->custom_url,
+                    'public_path' => $publicPath,
+                    'public_display_url' => PublicPath::displayUrl(ltrim($publicPath, '/')),
                     'preview_url' => asset('storage/' . ltrim($twibone->path, '/')),
                     'created_at' => $twibone->created_at?->toIso8601String(),
                     'uses_count' => $twibone->usages_count,

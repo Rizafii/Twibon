@@ -23,6 +23,9 @@ type TwibbonItem = {
     description: string;
     created_at?: string | null;
     slug: string;
+    custom_url?: string | null;
+    public_path: string;
+    public_display_url: string;
     preview_url: string;
     creator_name: string;
     creator_verified: boolean;
@@ -163,7 +166,7 @@ export default function TwibbonIndex({
                             {twibbons.data.map((twibbon) => (
                                 <Link
                                     key={twibbon.id}
-                                    href={`/twibbon/${twibbon.slug}`}
+                                    href={twibbon.public_path}
                                     className="block"
                                 >
                                     <Card className="overflow-hidden bg-white/95 py-0 shadow-none transition-shadow hover:shadow-md">

@@ -50,29 +50,17 @@ export default function AuthSimpleLayout({
                         </div>
                     </div>
 
-                    <div className="space-y-3 text-sm text-white/80">
-                        <p className="inline-flex items-center gap-2">
-                            <ShieldCheckIcon className="size-4" />
-                            Akses akun kreator dan admin lebih aman.
-                        </p>
-                        <p className="inline-flex items-center gap-2">
-                            <WandSparklesIcon className="size-4" />
-                            Siap dipakai untuk event sekolah dan komunitas.
-                        </p>
-                    </div>
                 </aside>
 
                 <main className="flex items-center justify-center bg-white/88 p-6 md:p-10">
                     <div className="w-full max-w-md space-y-8">
                         <div className="flex flex-col gap-4">
                             <Link href={home()} className="inline-flex w-fit items-center gap-2 lg:hidden">
-                                <div className="rounded-lg bg-slate-900 p-1.5">
                                     <img
                                         src="/favicon.svg"
                                         alt="Creative Six"
                                         className="size-6"
                                     />
-                                </div>
                                 <span className="text-sm font-semibold text-slate-900">Creative Six</span>
                             </Link>
 
