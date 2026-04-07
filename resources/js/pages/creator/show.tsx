@@ -108,7 +108,7 @@ export default function CreatorShow({
         <>
             <Head title={`Kreator - ${creator.name}`} />
 
-            <div className="min-h-screen bg-[radial-gradient(circle_at_12%_18%,#ffe7bc_0%,transparent_36%),radial-gradient(circle_at_84%_12%,#c9f4ff_0%,transparent_38%),linear-gradient(180deg,#fffdf8_0%,#edf6ff_100%)] px-4 py-6 md:px-8 md:py-10">
+            <div className="min-h-screen bg-background px-4 py-6 md:px-8 md:py-10">
                 <div className="mx-auto max-w-375 space-y-8">
                     <TwibbonNavbar canRegister={canRegister} />
 

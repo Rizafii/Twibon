@@ -18,6 +18,7 @@ class TwibbonApprovalController extends Controller
 
         $twibbons = Twibone::query()
             ->with('creator:id,name')
+            ->withCount('usages')
             ->when($search !== '', function ($query) use ($search): void {
                 $query->where('name', 'like', "%{$search}%");
             })
@@ -29,8 +30,12 @@ class TwibbonApprovalController extends Controller
                     'id' => $twibone->id,
                     'name' => $twibone->name,
                     'slug' => $twibone->url,
+                    'description' => $twibone->description,
+                    'preview_url' => asset('storage/' . ltrim($twibone->path, '/')),
+                    'custom_url' => $twibone->custom_url,
                     'creator_name' => $twibone->creator?->name ?? 'Unknown',
                     'is_approved' => $twibone->is_approved,
+                    'uses_count' => $twibone->usages_count,
                     'created_at' => $twibone->created_at?->toDateTimeString(),
                 ];
             });

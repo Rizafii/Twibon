@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [TwibbonController::class, 'home'])->name('home');
 Route::get('/catalog', [TwibbonController::class, 'catalog'])->name('twibbon.catalog');
+Route::get('/creators', [CreatorController::class, 'index'])->name('creator.index');
 Route::get('/creator/{user:username}', [CreatorController::class, 'show'])->name('creator.show');
 Route::get('/twibbon/{slug}', [TwibbonController::class, 'show'])->name('twibbon.show');
 Route::get('/editor/{slug}', [TwibbonEditorController::class, 'show'])->name('twibbon.editor.show');

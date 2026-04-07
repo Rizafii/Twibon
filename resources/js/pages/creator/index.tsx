@@ -1,10 +1,10 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { SearchIcon, SparklesIcon, User } from 'lucide-react';
+import { SearchIcon, SparklesIcon, UserIcon } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { TwibbonFooter } from '@/components/twibbon-footer';
 import { TwibbonNavbar } from '@/components/twibbon-navbar';
 import { VerifiedUserName } from '@/components/verified-user-name';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,16 +17,16 @@ import {
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 
-type TwibbonItem = {
+type CreatorItem = {
     id: number;
+    username: string;
     name: string;
-    description: string;
-    created_at?: string | null;
-    slug: string;
-    preview_url: string;
-    creator_name: string;
-    creator_verified: boolean;
-    uses_count: number;
+    bio?: string | null;
+    verified: boolean;
+    profile_photo_url?: string | null;
+    twibbon_count: number;
+    featured_twibbon_slug?: string | null;
+    featured_twibbon_preview_url?: string | null;
 };
 
 type PaginationLink = {
@@ -46,7 +46,7 @@ type Props = {
     filters: {
         search: string;
     };
-    twibbons: Paginated<TwibbonItem>;
+    creators: Paginated<CreatorItem>;
 };
 
 const sanitizePaginationLabel = (label: string): string =>
@@ -64,28 +64,7 @@ const getInitials = (name: string): string =>
         .map((part) => part[0]?.toUpperCase() ?? '')
         .join('');
 
-const formatCreatedAt = (value?: string | null): string => {
-    if (!value) {
-        return 'Tanggal tidak tersedia';
-    }
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-        return 'Tanggal tidak tersedia';
-    }
-
-    return new Intl.DateTimeFormat('id-ID', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-    }).format(date);
-};
-
-export default function TwibbonIndex({
-    canRegister,
-    filters,
-    twibbons,
-}: Props) {
+export default function CreatorIndex({ canRegister, filters, creators }: Props) {
     const { data, setData, get, processing } = useForm({
         search: filters.search,
     });
@@ -93,7 +72,7 @@ export default function TwibbonIndex({
     const handleSearch = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        get('/catalog', {
+        get('/creators', {
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -102,7 +81,7 @@ export default function TwibbonIndex({
 
     return (
         <>
-            <Head title="Full Katalog Twibbon" />
+            <Head title="Cari Kreator Twibbon" />
 
             <div className="min-h-screen bg-background px-4 py-6 md:px-8 md:py-10">
                 <div className="mx-auto max-w-375">
@@ -113,20 +92,19 @@ export default function TwibbonIndex({
                             <div className="space-y-2">
                                 <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-600">
                                     <SparklesIcon className="size-4" />
-                                    Buat foto profil kampanye dalam hitungan detik
+                                    Temukan kreator aktif dengan koleksi twibbon terbaik
                                 </p>
                                 <h1 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
-                                    Full Katalog Twibbon
+                                    Cari Kreator
                                 </h1>
                                 <p className="max-w-2xl text-sm text-slate-600 md:text-base">
-                                    Jelajahi koleksi twibbon yang sudah di-approve,
-                                    pilih desain favorit, lalu gabungkan dengan
-                                    fotomu di editor.
+                                    Jelajahi kreator yang sudah punya twibbon tayang,
+                                    cek profilnya, lalu pilih desain dari koleksi mereka.
                                 </p>
                             </div>
 
                             <Badge variant="secondary" className="w-fit">
-                                {twibbons.total} template tersedia
+                                {creators.total} kreator aktif
                             </Badge>
                         </div>
 
@@ -139,7 +117,7 @@ export default function TwibbonIndex({
                                 onChange={(event) =>
                                     setData('search', event.target.value)
                                 }
-                                placeholder="Cari nama atau deskripsi twibbon..."
+                                placeholder="Cari nama, username, atau bio kreator..."
                                 className="h-11 md:flex-1"
                             />
                             <Button type="submit" className="h-11 px-5">
@@ -149,74 +127,79 @@ export default function TwibbonIndex({
                         </form>
                     </section>
 
-                    {twibbons.data.length === 0 ? (
+                    {creators.data.length === 0 ? (
                         <Card>
                             <CardHeader>
-                                <CardTitle>Belum ada twibbon ditemukan</CardTitle>
+                                <CardTitle>Kreator tidak ditemukan</CardTitle>
                                 <CardDescription>
-                                    Coba kata kunci lain atau upload twibbon baru.
+                                    Coba kata kunci lain untuk mencari kreator yang memiliki twibbon.
                                 </CardDescription>
                             </CardHeader>
                         </Card>
                     ) : (
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-sm md:p-10">
-                            {twibbons.data.map((twibbon) => (
+                        <div className="grid gap-4 rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-sm sm:grid-cols-2 lg:grid-cols-4 md:p-10">
+                            {creators.data.map((creator) => (
                                 <Link
-                                    key={twibbon.id}
-                                    href={`/twibbon/${twibbon.slug}`}
+                                    key={creator.id}
+                                    href={`/creator/${creator.username}`}
                                     className="block"
                                 >
                                     <Card className="overflow-hidden bg-white/95 py-0 shadow-none transition-shadow hover:shadow-md">
-                                        <div className="relative h-56 bg-slate-100">
-                                            <img
-                                                src={twibbon.preview_url}
-                                                alt={twibbon.name}
-                                                loading="lazy"
-                                                className="h-full w-full object-cover"
-                                            />
+                                        <div className="relative h-44 bg-slate-100">
+                                            {creator.featured_twibbon_preview_url ? (
+                                                <img
+                                                    src={creator.featured_twibbon_preview_url}
+                                                    alt={`Preview twibbon ${creator.name}`}
+                                                    loading="lazy"
+                                                    className="h-full w-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="h-full w-full bg-[linear-gradient(135deg,#dbeafe_0%,#fef3c7_55%,#dcfce7_100%)]" />
+                                            )}
+
+                                            <div className="absolute right-2 top-2">
+                                                <Badge variant="secondary">
+                                                    {creator.twibbon_count} twibbon
+                                                </Badge>
+                                            </div>
                                         </div>
 
                                         <CardHeader className="space-y-2 px-4">
                                             <CardTitle className="min-h-10 text-base leading-5 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">
-                                                {twibbon.name}
+                                                <VerifiedUserName
+                                                    name={creator.name}
+                                                    verified={creator.verified}
+                                                    iconClassName="size-3.5"
+                                                />
                                             </CardTitle>
-                                            <CardDescription className="min-h-8 text-xs leading-4 text-slate-500 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">
-                                                {twibbon.description && twibbon.description.trim() !== ''
-                                                    ? twibbon.description
-                                                    : 'Twibbon ini belum memiliki deskripsi.'}
+                                            <CardDescription className="text-xs text-slate-500">
+                                                @{creator.username}
                                             </CardDescription>
                                         </CardHeader>
 
-                                        <CardContent className=" px-4 pb-4 pt-0">
-                                            <div className="flex items-center justify-between gap-2">
-                                                <div className="flex min-w-0 flex-1 items-center gap-2">
-                                                    <Avatar className="h-7 w-7 overflow-hidden rounded-full">
-                                                        <AvatarFallback className="bg-neutral-200 text-xs text-black">
-                                                            {getInitials(twibbon.creator_name)}
-                                                        </AvatarFallback>
-                                                    </Avatar>
-                                                    <div className="min-w-0 leading-tight">
-                                                        <p className="truncate text-[11px] font-medium text-slate-800">
-                                                            <VerifiedUserName
-                                                                name={
-                                                                    twibbon.creator_name
-                                                                }
-                                                                verified={
-                                                                    twibbon.creator_verified
-                                                                }
-                                                                nameClassName="truncate"
-                                                                iconClassName="size-3"
-                                                            />
-                                                        </p>
-                                                        <p className="text-[10px] text-slate-500">
-                                                            Dibuat pada {formatCreatedAt(twibbon.created_at)}
-                                                        </p>
-                                                    </div>
-                                                </div>
+                                        <CardContent className="px-4 pb-4 pt-0">
+                                            <div className="flex items-start gap-2">
+                                                <Avatar className="h-8 w-8 overflow-hidden rounded-full">
+                                                    <AvatarImage
+                                                        src={creator.profile_photo_url ?? undefined}
+                                                        alt={creator.name}
+                                                    />
+                                                    <AvatarFallback className="bg-neutral-200 text-xs text-black">
+                                                        {getInitials(creator.name)}
+                                                    </AvatarFallback>
+                                                </Avatar>
 
-                                                <div className="shrink-0 text-xs flex items-center gap-1">
-                                                    <User size={12} />
-                                                    {twibbon.uses_count}
+                                                <div className="min-w-0 flex-1 leading-tight">
+                                                    <p className="text-xs text-slate-600 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">
+                                                        {creator.bio && creator.bio.trim() !== ''
+                                                            ? creator.bio
+                                                            : 'Kreator ini belum menambahkan bio.'}
+                                                    </p>
+
+                                                    <p className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-slate-700">
+                                                        <UserIcon className="size-3.5" />
+                                                        {creator.twibbon_count} twibbon publik
+                                                    </p>
                                                 </div>
                                             </div>
                                         </CardContent>
@@ -227,7 +210,7 @@ export default function TwibbonIndex({
                     )}
 
                     <div className="mt-8 flex flex-wrap items-center gap-2">
-                        {twibbons.links.map((link) => (
+                        {creators.links.map((link) => (
                             <Button
                                 key={`${link.label}-${link.url ?? 'null'}`}
                                 asChild={link.url !== null}

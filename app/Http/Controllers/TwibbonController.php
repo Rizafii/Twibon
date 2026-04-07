@@ -23,6 +23,10 @@ class TwibbonController extends Controller
             ->take(10)
             ->values()
             ->map(function (Twibone $twibone): array {
+                $creatorProfilePhotoUrl = $twibone->creator?->profile_photo_path
+                    ? asset('storage/' . ltrim((string) $twibone->creator->profile_photo_path, '/'))
+                    : null;
+
                 return [
                     'id' => $twibone->id,
                     'name' => $twibone->name,
@@ -31,6 +35,7 @@ class TwibbonController extends Controller
                     'creator_id' => $twibone->creator?->id,
                     'creator_username' => $twibone->creator?->username,
                     'creator_name' => $twibone->creator?->name ?? 'Unknown',
+                    'creator_profile_photo_url' => $creatorProfilePhotoUrl,
                     'creator_verified' => (bool) ($twibone->creator?->verified ?? false),
                     'uses_count' => $twibone->usages_count,
                 ];

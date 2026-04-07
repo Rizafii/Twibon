@@ -11,6 +11,75 @@ use Laravel\Fortify\Features;
 
 class CreatorController extends Controller
 {
+    public function index(Request $request): Response
+    {
+        $search = trim((string) $request->string('search'));
+
+        $creators = User::query()
+            ->whereHas('twibones', function ($query): void {
+                $query->where('is_approved', true);
+            })
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->where(function ($searchQuery) use ($search): void {
+                    $searchQuery->where('name', 'like', "%{$search}%")
+                        ->orWhere('username', 'like', "%{$search}%")
+                        ->orWhere('bio', 'like', "%{$search}%");
+                });
+            })
+            ->withCount([
+                'twibones as approved_twibbons_count' => function ($query): void {
+                    $query->where('is_approved', true);
+                },
+            ])
+            ->addSelect([
+                'featured_twibbon_slug' => Twibone::query()
+                    ->select('url')
+                    ->whereColumn('users_uid', 'users.id')
+                    ->where('is_approved', true)
+                    ->latest('id')
+                    ->limit(1),
+                'featured_twibbon_path' => Twibone::query()
+                    ->select('path')
+                    ->whereColumn('users_uid', 'users.id')
+                    ->where('is_approved', true)
+                    ->latest('id')
+                    ->limit(1),
+            ])
+            ->orderByDesc('approved_twibbons_count')
+            ->latest('id')
+            ->paginate(12)
+            ->withQueryString()
+            ->through(function (User $creator): array {
+                $profilePhotoUrl = $creator->profile_photo_path
+                    ? asset('storage/' . ltrim((string) $creator->profile_photo_path, '/'))
+                    : null;
+
+                $featuredTwibbonPreviewUrl = $creator->featured_twibbon_path
+                    ? asset('storage/' . ltrim((string) $creator->featured_twibbon_path, '/'))
+                    : null;
+
+                return [
+                    'id' => $creator->id,
+                    'username' => $creator->username,
+                    'name' => $creator->name,
+                    'bio' => $creator->bio,
+                    'verified' => (bool) $creator->verified,
+                    'profile_photo_url' => $profilePhotoUrl,
+                    'twibbon_count' => (int) $creator->approved_twibbons_count,
+                    'featured_twibbon_slug' => $creator->featured_twibbon_slug,
+                    'featured_twibbon_preview_url' => $featuredTwibbonPreviewUrl,
+                ];
+            });
+
+        return Inertia::render('creator/index', [
+            'canRegister' => Features::enabled(Features::registration()),
+            'filters' => [
+                'search' => $search,
+            ],
+            'creators' => $creators,
+        ]);
+    }
+
     public function show(Request $request, User $user): Response
     {
         $sort = (string) $request->string('sort', 'latest');

@@ -30,6 +30,7 @@ type TrendingTwibbon = {
     creator_id: number | null;
     creator_username?: string | null;
     creator_name: string;
+    creator_profile_photo_url?: string | null;
     creator_verified: boolean;
     uses_count: number;
 };
@@ -73,7 +74,7 @@ export default function TwibbonHome({
         <>
             <Head title="SMKN 6 Surakarta - Twibbon & Shortlink" />
 
-            <div className="min-h-screen bg-[radial-gradient(circle_at_12%_18%,#ffe7bc_0%,transparent_36%),radial-gradient(circle_at_84%_12%,#c9f4ff_0%,transparent_38%),linear-gradient(180deg,#fffdf8_0%,#edf6ff_100%)] px-4 py-6 md:px-8 md:py-10">
+            <div className="min-h-screen bg-background px-4 py-6 md:px-8 md:py-10">
                 <div className="mx-auto max-w-375 space-y-8">
                     <TwibbonNavbar canRegister={canRegister} />
 
@@ -190,6 +191,15 @@ export default function TwibbonHome({
                                                         className="-mx-1 flex items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-slate-100/70"
                                                     >
                                                         <Avatar className="h-7 w-7 overflow-hidden rounded-full">
+                                                            <AvatarImage
+                                                                src={
+                                                                    twibbon.creator_profile_photo_url ??
+                                                                    undefined
+                                                                }
+                                                                alt={
+                                                                    twibbon.creator_name
+                                                                }
+                                                            />
                                                             <AvatarFallback className="bg-neutral-200 text-xs text-black">
                                                                 {getInitials(
                                                                     twibbon.creator_name,
@@ -216,6 +226,15 @@ export default function TwibbonHome({
                                                 ) : (
                                                     <div className="flex items-center gap-2">
                                                         <Avatar className="h-7 w-7 overflow-hidden rounded-full">
+                                                            <AvatarImage
+                                                                src={
+                                                                    twibbon.creator_profile_photo_url ??
+                                                                    undefined
+                                                                }
+                                                                alt={
+                                                                    twibbon.creator_name
+                                                                }
+                                                            />
                                                             <AvatarFallback className="bg-neutral-200 text-xs text-black">
                                                                 {getInitials(
                                                                     twibbon.creator_name,

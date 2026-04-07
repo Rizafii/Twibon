@@ -340,7 +340,7 @@ export default function MyProfile({
         <>
             <Head title="Profil Saya" />
 
-            <div className="min-h-screen bg-[radial-gradient(circle_at_8%_16%,#ffe2ad_0%,transparent_32%),radial-gradient(circle_at_94%_8%,#c6f1ff_0%,transparent_35%),linear-gradient(180deg,#fff9ef_0%,#eef6ff_100%)] px-4 py-6 md:px-8 md:py-10">
+            <div className="min-h-screen bg-background px-4 py-6 md:px-8 md:py-10">
                 <div className="mx-auto max-w-375 space-y-6">
                     <TwibbonNavbar />
 

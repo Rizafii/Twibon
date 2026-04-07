@@ -25,8 +25,12 @@ type TwibbonRow = {
     id: number;
     name: string;
     slug: string;
+    description: string;
+    preview_url: string;
+    custom_url?: string | null;
     creator_name: string;
     is_approved: boolean;
+    uses_count: number;
     created_at: string | null;
 };
 
@@ -61,12 +65,29 @@ const sanitizePaginationLabel = (label: string): string =>
         .replace(/<[^>]+>/g, '')
         .trim();
 
+const formatDateTime = (value: string | null): string => {
+    if (!value) {
+        return '-';
+    }
+
+    const parsed = new Date(value);
+
+    if (Number.isNaN(parsed.getTime())) {
+        return value;
+    }
+
+    return parsed.toLocaleString('id-ID');
+};
+
 export default function AdminTwibbonIndex({ filters, twibbons }: Props) {
     const { flash } = usePage<SharedProps>().props;
     const { data, setData, get, processing } = useForm({
         search: filters.search,
     });
     const [selectedReject, setSelectedReject] = useState<TwibbonRow | null>(
+        null,
+    );
+    const [selectedDetail, setSelectedDetail] = useState<TwibbonRow | null>(
         null,
     );
     const [activeActionId, setActiveActionId] = useState<number | null>(null);
@@ -81,7 +102,7 @@ export default function AdminTwibbonIndex({ filters, twibbons }: Props) {
         });
     };
 
-    const approve = (twibbon: TwibbonRow) => {
+    const approve = (twibbon: TwibbonRow, closeDetail = false) => {
         setActiveActionId(twibbon.id);
 
         router.patch(
@@ -89,9 +110,22 @@ export default function AdminTwibbonIndex({ filters, twibbons }: Props) {
             {},
             {
                 preserveScroll: true,
+                onSuccess: () => {
+                    if (closeDetail) {
+                        setSelectedDetail(null);
+                    }
+                },
                 onFinish: () => setActiveActionId(null),
             },
         );
+    };
+
+    const openRejectDialog = (twibbon: TwibbonRow, closeDetail = false) => {
+        setSelectedReject(twibbon);
+
+        if (closeDetail) {
+            setSelectedDetail(null);
+        }
     };
 
     const reject = () => {
@@ -204,12 +238,50 @@ export default function AdminTwibbonIndex({ filters, twibbons }: Props) {
                                                     )}
                                                 </td>
                                                 <td className="px-4 py-3">
-                                                    <div className="flex gap-2">
+                                                    <div className="flex flex-wrap gap-2">
                                                         <Button
                                                             type="button"
                                                             size="sm"
+                                                            variant="outline"
                                                             onClick={() =>
-                                                                approve(twibbon)
+                                                                setSelectedDetail(
+                                                                    twibbon,
+                                                                )
+                                                            }
+                                                        >
+                                                            Detail
+                                                        </Button>
+
+                                                        {!twibbon.is_approved && (
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                onClick={() =>
+                                                                    approve(
+                                                                        twibbon,
+                                                                    )
+                                                                }
+                                                                disabled={
+                                                                    activeActionId ===
+                                                                    twibbon.id
+                                                                }
+                                                            >
+                                                                {activeActionId ===
+                                                                    twibbon.id && (
+                                                                    <Spinner className="size-4" />
+                                                                )}
+                                                                Approve
+                                                            </Button>
+                                                        )}
+
+                                                        <Button
+                                                            type="button"
+                                                            size="sm"
+                                                            variant="destructive"
+                                                            onClick={() =>
+                                                                openRejectDialog(
+                                                                    twibbon,
+                                                                )
                                                             }
                                                             disabled={
                                                                 activeActionId ===
@@ -220,22 +292,6 @@ export default function AdminTwibbonIndex({ filters, twibbons }: Props) {
                                                                 twibbon.id && (
                                                                 <Spinner className="size-4" />
                                                             )}
-                                                            Approve
-                                                        </Button>
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            variant="destructive"
-                                                            onClick={() =>
-                                                                setSelectedReject(
-                                                                    twibbon,
-                                                                )
-                                                            }
-                                                            disabled={
-                                                                activeActionId ===
-                                                                twibbon.id
-                                                            }
-                                                        >
                                                             Reject
                                                         </Button>
                                                     </div>
@@ -277,6 +333,159 @@ export default function AdminTwibbonIndex({ filters, twibbons }: Props) {
                     </CardContent>
                 </Card>
             </div>
+
+            <Dialog
+                open={selectedDetail !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setSelectedDetail(null);
+                    }
+                }}
+            >
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Detail Twibbon</DialogTitle>
+                        <DialogDescription>
+                            Informasi lengkap twibbon untuk kebutuhan review
+                            sebelum approve atau reject.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {selectedDetail && (
+                        <div className="space-y-4">
+                            <div className="overflow-hidden rounded-lg border bg-slate-50">
+                                <img
+                                    src={selectedDetail.preview_url}
+                                    alt={selectedDetail.name}
+                                    className="h-64 w-full object-contain"
+                                />
+                            </div>
+
+                            <div className="grid gap-2 text-sm">
+                                <p>
+                                    <span className="font-medium text-slate-900">
+                                        Nama:
+                                    </span>{' '}
+                                    {selectedDetail.name}
+                                </p>
+                                <p>
+                                    <span className="font-medium text-slate-900">
+                                        Creator:
+                                    </span>{' '}
+                                    {selectedDetail.creator_name}
+                                </p>
+                                <p>
+                                    <span className="font-medium text-slate-900">
+                                        Slug:
+                                    </span>{' '}
+                                    /twibbon/{selectedDetail.slug}
+                                </p>
+                                <p>
+                                    <span className="font-medium text-slate-900">
+                                        Custom URL:
+                                    </span>{' '}
+                                    {selectedDetail.custom_url
+                                        ? `/${selectedDetail.custom_url}`
+                                        : '-'}
+                                </p>
+                                <p>
+                                    <span className="font-medium text-slate-900">
+                                        Penggunaan:
+                                    </span>{' '}
+                                    {selectedDetail.uses_count}
+                                </p>
+                                <p>
+                                    <span className="font-medium text-slate-900">
+                                        Dibuat:
+                                    </span>{' '}
+                                    {formatDateTime(selectedDetail.created_at)}
+                                </p>
+                                <p>
+                                    <span className="font-medium text-slate-900">
+                                        Status:
+                                    </span>{' '}
+                                    {selectedDetail.is_approved
+                                        ? 'Approved'
+                                        : 'Pending'}
+                                </p>
+                            </div>
+
+                            <div className="space-y-1">
+                                <p className="text-sm font-medium text-slate-900">
+                                    Deskripsi
+                                </p>
+                                <p className="whitespace-pre-line text-sm text-slate-600">
+                                    {selectedDetail.description}
+                                </p>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2">
+                                {selectedDetail.is_approved ? (
+                                    <Button asChild variant="outline" size="sm">
+                                        <Link
+                                            href={`/twibbon/${selectedDetail.slug}`}
+                                        >
+                                            Buka Halaman Twibbon
+                                        </Link>
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        disabled
+                                    >
+                                        Belum Dipublish
+                                    </Button>
+                                )}
+
+                                {!selectedDetail.is_approved && (
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        onClick={() =>
+                                            approve(selectedDetail, true)
+                                        }
+                                        disabled={
+                                            activeActionId ===
+                                            selectedDetail.id
+                                        }
+                                    >
+                                        {activeActionId ===
+                                            selectedDetail.id && (
+                                            <Spinner className="size-4" />
+                                        )}
+                                        Approve
+                                    </Button>
+                                )}
+
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() =>
+                                        openRejectDialog(selectedDetail, true)
+                                    }
+                                    disabled={
+                                        activeActionId === selectedDetail.id
+                                    }
+                                >
+                                    Reject
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => setSelectedDetail(null)}
+                                >
+                                    Tutup
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
 
             <Dialog
                 open={selectedReject !== null}
